@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#0f7ee8" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="TypeStorm" />
+  <title>TypeStorm: Island Rush</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app" class="app">
+    <section id="loadingScreen" class="screen active loading-screen" aria-label="Loading TypeStorm">
+      <div class="animated-sea" aria-hidden="true"></div>
+      <div class="loading-card">
+        <div class="logo-badge">TS</div>
+        <h1>TypeStorm:<span> Island Rush</span></h1>
+        <p>Preparing waves, islands, bosses, prompts, and procedural sea creatures…</p>
+        <div class="loading-bar"><span id="loadingFill"></span></div>
+        <small id="loadingTip">Tip: Tap enemies on mobile to target them.</small>
+      </div>
+    </section>
+
+    <section id="mainMenu" class="screen menu-screen" aria-label="Main menu">
+      <div class="animated-sea" aria-hidden="true"></div>
+      <header class="hero-panel">
+        <div class="logo-badge big">TS</div>
+        <div>
+          <h1>TypeStorm:<span> Island Rush</span></h1>
+          <p>Original tropical typing arcade survival with solo, co-op, AI, and online rooms.</p>
+        </div>
+      </header>
+      <div class="menu-grid two">
+        <button class="menu-card primary" data-action="openModes">
+          <strong>Play</strong><span>Adventure, multiplayer, boss rush, practice</span>
+        </button>
+        <button class="menu-card" data-action="openWorldMap">
+          <strong>World Map</strong><span>110 levels across 10 ocean worlds</span>
+        </button>
+        <button class="menu-card" data-action="openShop">
+          <strong>Shop</strong><span>Avatars, trails, cosmetics, upgrades</span>
+        </button>
+        <button class="menu-card" data-action="openSettings">
+          <strong>Settings</strong><span>Audio, accessibility, fullscreen, controls</span>
+        </button>
+        <button class="menu-card" data-action="openHelp">
+          <strong>Help & Credits</strong><span>Controls, rules, original asset notes</span>
+        </button>
+        <button class="menu-card" data-action="quickPlay">
+          <strong>Quick Solo</strong><span>Jump into the latest unlocked level</span>
+        </button>
+      </div>
+      <footer class="footer-note">Kid-safe • No paid assets • Canvas 2D • Render-ready</footer>
+    </section>
+
+    <section id="modeScreen" class="screen panel-screen" aria-label="Mode select">
+      <div class="topbar">
+        <button class="ghost-btn" data-action="backMenu">← Menu</button>
+        <h2>Choose Mode</h2>
+        <button class="ghost-btn" data-action="openSettings">Settings</button>
+      </div>
+      <div id="modeGrid" class="menu-grid modes"></div>
+    </section>
+
+    <section id="roomScreen" class="screen panel-screen multiplayer-screen" aria-label="Room create and join">
+      <div class="topbar">
+        <button class="ghost-btn" data-action="openModes">← Modes</button>
+        <h2>Real Multiplayer Match Center</h2>
+        <button class="ghost-btn" data-action="backMenu">Menu</button>
+      </div>
+
+      <div class="match-center-hero glass-card">
+        <div>
+          <span class="tiny-label">TypeStorm Online</span>
+          <h3>Make a room code, invite friends, and defend the island together 🌊</h3>
+          <p>Rooms stay connected after retry, next level, or lobby votes. Empty slots can become fair AI teammates.</p>
+        </div>
+        <div class="server-badge" id="serverBadge">Connecting…</div>
+      </div>
+
+      <div class="match-center-grid">
+        <div class="glass-card room-create-card">
+          <h3>Your Player Name</h3>
+          <label class="tiny">Shown in rooms, scoreboards, votes, and battle results</label>
+          <input id="playerNameInput" maxlength="18" placeholder="Island Typer" autocomplete="nickname" />
+
+          <h3>Create Game</h3>
+          <p>Pick a room type. The host chooses world, level, AI fill, then starts the match.</p>
+          <div class="create-mode-grid">
+            <button class="primary-btn create-mode" data-create-mode="Co-op Island Defense">🤝 Create Co-op</button>
+            <button class="primary-btn create-mode" data-create-mode="Multiplayer Survival">🎮 Create Survival</button>
+            <button class="secondary-btn create-mode" data-create-mode="Ranked Speed Battle">⚡ Create Ranked</button>
+            <button class="secondary-btn create-mode" data-create-mode="Custom Room">🧭 Custom Room</button>
+          </div>
+        </div>
+
+        <div class="glass-card room-join-card">
+          <h3>Join by Game Code</h3>
+          <p>Enter the 6-character code from the host.</p>
+          <div class="join-code-row">
+            <input id="roomCodeInput" maxlength="8" placeholder="ABC123" autocapitalize="characters" autocomplete="off" />
+            <button class="primary-btn" data-action="joinRoom">Join</button>
+          </div>
+          <div class="room-help-card">
+            <b>Works on Render</b>
+            <span>Node + Express + Socket.IO. Offline AI modes still work if internet drops.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card live-games-card">
+        <div class="section-head">
+          <div><h3>Available Real Games</h3><p>Join public lobby rooms before the host starts.</p></div>
+          <button class="ghost-btn" data-action="refreshRooms">Refresh</button>
+        </div>
+        <div id="roomList" class="room-list"><div class="empty-room">Looking for open rooms…</div></div>
+      </div>
+      <p id="roomStatus" class="status-line" role="status"></p>
+    </section>
+
+    <section id="lobbyScreen" class="screen panel-screen multiplayer-screen" aria-label="Lobby">
+      <div class="topbar">
+        <button class="ghost-btn" data-action="leaveLobby">← Match Center</button>
+        <h2>Island Lobby</h2>
+        <button class="ghost-btn" data-action="copyRoomCode">Copy Code</button>
+      </div>
+
+      <div class="lobby-code-card glass-card">
+        <span class="tiny-label">Room Code</span>
+        <div id="lobbyCodePill" class="big-code">ABC123</div>
+        <p id="lobbyInfo">Share this code with friends. Host starts when ready.</p>
+      </div>
+
+      <div class="lobby-wrap upgraded-lobby">
+        <div class="glass-card lobby-card">
+          <div class="section-head compact">
+            <div><h3>Players</h3><p>Live roster, scores, status, and AI fill.</p></div>
+            <span id="hostBadge" class="pill">Host</span>
+          </div>
+          <div id="lobbyPlayers" class="player-list"></div>
+          <p class="mini-copy">Max 7 players. Disconnected players become fair AI during active matches.</p>
+          <div class="roomActions">
+            <button id="startMatchBtn" class="primary-btn" data-action="hostStartMatch">Start Match</button>
+            <button class="secondary-btn" data-action="copyRoomCode">Copy Code</button>
+          </div>
+        </div>
+
+        <div class="glass-card setup-card">
+          <h3>Match Setup</h3>
+          <label>World<select id="lobbyWorldSelect"></select></label>
+          <label>Level<select id="lobbyLevelSelect"></select></label>
+          <label>Mode<select id="lobbyModeSelect"></select></label>
+          <label class="toggle"><input id="aiFillToggle" type="checkbox" checked /> <span>Fill empty slots with AI</span></label>
+          <div id="lobbyWorldPreview" class="world-preview-card">Choose a world to preview the boss and effect.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="worldMapScreen" class="screen panel-screen" aria-label="World map">
+      <div class="topbar">
+        <button class="ghost-btn" data-action="backMenu">← Menu</button>
+        <h2>Island World Map</h2>
+        <button class="ghost-btn" data-action="openShop">Shop</button>
+      </div>
+      <div id="worldMap" class="world-map"></div>
+    </section>
+
+    <section id="shopScreen" class="screen panel-screen" aria-label="Shop and upgrades">
+      <div class="topbar">
+        <button class="ghost-btn" data-action="backMenu">← Menu</button>
+        <h2>Shop, Avatars & Upgrades</h2>
+        <button class="ghost-btn" data-action="openWorldMap">Map</button>
+      </div>
+      <div class="wallet-row">
+        <span>Coins: <b id="coinCount">0</b></span>
+        <span>Pearls: <b id="pearlCount">0</b></span>
+        <span>Player Level: <b id="playerLevel">1</b></span>
+      </div>
+      <div id="shopGrid" class="shop-grid"></div>
+    </section>
+
+    <section id="settingsScreen" class="screen panel-screen" aria-label="Settings">
+      <div class="topbar">
+        <button class="ghost-btn" data-action="backSmart">← Back</button>
+        <h2>Settings</h2>
+        <button class="ghost-btn" data-action="resetSettings">Reset</button>
+      </div>
+      <div class="settings-grid">
+        <label>Music Volume<input id="musicVolume" type="range" min="0" max="1" step="0.05" /></label>
+        <label>SFX Volume<input id="sfxVolume" type="range" min="0" max="1" step="0.05" /></label>
+        <label>Font Size<select id="fontSize"><option value="normal">Normal</option><option value="large">Large</option><option value="huge">Huge</option></select></label>
+        <label class="toggle"><input id="reduceMotion" type="checkbox" /> <span>Reduce motion</span></label>
+        <label class="toggle"><input id="bigText" type="checkbox" /> <span>Big text mode</span></label>
+        <label class="toggle"><input id="highContrast" type="checkbox" /> <span>High contrast mode</span></label>
+        <label class="toggle"><input id="mobileKeyboardToggle" type="checkbox" /> <span>Show on-screen keyboard</span></label>
+        <label class="toggle"><input id="muteToggle" type="checkbox" /> <span>Mute all audio</span></label>
+        <button class="primary-btn" data-action="fullscreen">Fullscreen</button>
+        <button class="secondary-btn" data-action="openHelp">Controls Help</button>
+      </div>
+      <p class="landscape-note">Mobile tip: turn your phone sideways for the most room. Safe-area padding is enabled for iPhone.</p>
+    </section>
+
+    <section id="helpScreen" class="screen panel-screen" aria-label="Help and credits">
+      <div class="topbar">
+        <button class="ghost-btn" data-action="backSmart">← Back</button>
+        <h2>Help & Credits</h2>
+        <button class="ghost-btn" data-action="openModes">Play</button>
+      </div>
+      <div class="help-grid">
+        <article class="glass-card"><h3>How to Play</h3><p>Type the active enemy prompt before it reaches your base. Tap an enemy to target it. Backspace edits. Enter confirms phrases.</p></article>
+        <article class="glass-card"><h3>Controls</h3><p>Desktop: physical keyboard. Mobile: touch keyboard or device keyboard. Pause from the top-right HUD button.</p></article>
+        <article class="glass-card"><h3>Original Assets</h3><p>All creatures are procedural Canvas drawings. Audio is generated with Web Audio. No external paid assets or copied branding are used.</p></article>
+        <article class="glass-card"><h3>Multiplayer</h3><p>Create a code, invite friends, start the room, and vote after each level. Disconnected players are replaced by fair AI.</p></article>
+      </div>
+    </section>
+
+    <section id="gameScreen" class="screen game-screen" aria-label="Gameplay">
+      <canvas id="gameCanvas" width="1280" height="720"></canvas>
+      <div id="hud" class="hud">
+        <div class="hud-row top">
+          <div class="hud-pill">Score <b id="hudScore">0</b></div>
+          <div class="hud-pill">Combo <b id="hudCombo">x1</b></div>
+          <div class="hud-pill">Accuracy <b id="hudAccuracy">100%</b></div>
+          <div class="hud-pill">WPM <b id="hudWpm">0</b></div>
+          <div class="hud-pill">Level <b id="hudLevel">1</b></div>
+          <div class="hud-pill health">Base <b id="hudHealth">100</b></div>
+          <button class="pause-btn" data-action="pauseGame">Ⅱ</button>
+        </div>
+        <div class="hud-row bottom">
+          <div class="target-box">Target: <b id="hudTarget">None</b></div>
+          <div class="wave-box">Wave <b id="hudWave">1</b> • Time <b id="hudTimer">0:00</b></div>
+          <div id="powerButtons" class="power-buttons"></div>
+        </div>
+      </div>
+      <div id="leaderboard" class="leaderboard"></div>
+      <div id="mobileKeyboard" class="mobile-keyboard" aria-label="On-screen keyboard"></div>
+      <input id="hiddenTypingInput" class="hidden-typing" autocomplete="off" autocapitalize="none" spellcheck="false" inputmode="text" aria-label="Typing input" />
+    </section>
+
+    <div id="pauseOverlay" class="overlay" aria-label="Pause menu">
+      <div class="modal-card">
+        <h2>Paused</h2>
+        <p>Take a breath. The storm waits for you.</p>
+        <button class="primary-btn" data-action="resumeGame">Resume</button>
+        <button class="secondary-btn" data-action="restartLevel">Restart Level</button>
+        <button class="secondary-btn" data-action="openSettingsFromPause">Settings</button>
+        <button class="danger-btn" data-action="quitToLobbyOrMenu">Quit to Lobby / Menu</button>
+      </div>
+    </div>
+
+    <div id="resultOverlay" class="overlay" aria-label="Level results">
+      <div class="modal-card wide">
+        <h2 id="resultTitle">Level Complete</h2>
+        <p id="resultSummary"></p>
+        <div id="resultStats" class="result-stats"></div>
+        <div id="votePanel" class="vote-panel">
+          <button class="primary-btn" data-vote="next">Next Level</button>
+          <button class="secondary-btn" data-vote="retry">Retry</button>
+          <button class="secondary-btn" data-vote="lobby">Return to Lobby</button>
+        </div>
+        <p id="voteStatus" class="status-line"></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,361 @@
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const path = require('path');
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: '*' },
+  pingTimeout: 25000,
+  pingInterval: 10000,
+  maxHttpBufferSize: 1e6
+});
+
+const PORT = process.env.PORT || 3000;
+const MAX_PLAYERS = 7;
+const ROOM_TTL_MS = 1000 * 60 * 60 * 4;
+const rooms = new Map();
+
+app.use(express.static(path.join(__dirname)));
+app.get('/health', (_req, res) => res.json({ ok: true, rooms: rooms.size }));
+app.get('*', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+
+function makeCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  do {
+    code = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  } while (rooms.has(code));
+  return code;
+}
+
+function safeName(name) {
+  const cleaned = String(name || '').replace(/[<>]/g, '').trim().slice(0, 18);
+  return cleaned || 'Player';
+}
+
+function makeAi(slot = 1) {
+  const names = ['CoralBot', 'PearlPilot', 'BubbleByte', 'ReefRacer', 'LagoonLex', 'TideTyper', 'FinFocus'];
+  const skill = ['easy', 'medium', 'hard', 'expert'][Math.min(3, Math.floor(Math.random() * 4))];
+  return {
+    id: `ai_${Date.now()}_${Math.random().toString(16).slice(2, 7)}`,
+    socketId: null,
+    name: names[(slot + Math.floor(Math.random() * names.length)) % names.length],
+    isAI: true,
+    skill,
+    score: 0,
+    combo: 1,
+    accuracy: 100,
+    lives: 100,
+    status: 'ready',
+    connected: true
+  };
+}
+
+function publicRoom(room) {
+  return {
+    code: room.code,
+    hostId: room.hostId,
+    hostName: room.players.find(p => p.id === room.hostId)?.name || 'Player',
+    mode: room.mode,
+    worldIndex: room.worldIndex,
+    levelIndex: room.levelIndex,
+    phase: room.phase,
+    createdAt: room.createdAt,
+    players: room.players.map(p => ({
+      id: p.id,
+      name: p.name,
+      isAI: !!p.isAI,
+      skill: p.skill || null,
+      score: p.score || 0,
+      combo: p.combo || 1,
+      accuracy: p.accuracy ?? 100,
+      lives: p.lives ?? 100,
+      status: p.status || 'lobby',
+      connected: p.connected !== false
+    })),
+    votes: room.votes || {}
+  };
+}
+
+function publicRooms() {
+  return [...rooms.values()]
+    .filter(room => room.phase === 'lobby' && room.players.filter(p => !p.isAI).length < MAX_PLAYERS)
+    .map(room => {
+      const pub = publicRoom(room);
+      pub.humans = room.players.filter(p => !p.isAI).length;
+      return pub;
+    })
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, 20);
+}
+
+function emitRoomList() {
+  io.emit('room:list', publicRooms());
+}
+
+function emitRoom(room) {
+  io.to(room.code).emit('room:update', publicRoom(room));
+}
+
+function findRoomAndPlayer(socket) {
+  for (const room of rooms.values()) {
+    const player = room.players.find(p => p.socketId === socket.id);
+    if (player) return { room, player };
+  }
+  return { room: null, player: null };
+}
+
+function fillAI(room) {
+  while (room.players.length < MAX_PLAYERS) {
+    room.players.push(makeAi(room.players.length + 1));
+  }
+}
+
+function removeExcessAI(room) {
+  const humans = room.players.filter(p => !p.isAI);
+  const ai = room.players.filter(p => p.isAI);
+  room.players = [...humans, ...ai].slice(0, MAX_PLAYERS);
+}
+
+io.on('connection', socket => {
+  socket.emit('room:list', publicRooms());
+  socket.on('room:list', () => socket.emit('room:list', publicRooms()));
+
+  socket.on('room:create', (payload = {}, ack) => {
+    try {
+      const code = makeCode();
+      const player = {
+        id: `p_${socket.id}`,
+        socketId: socket.id,
+        name: safeName(payload.name),
+        isAI: false,
+        score: 0,
+        combo: 1,
+        accuracy: 100,
+        lives: 100,
+        status: 'host',
+        connected: true
+      };
+      const room = {
+        code,
+        hostId: player.id,
+        hostSocketId: socket.id,
+        mode: payload.mode || 'Multiplayer Survival',
+        worldIndex: Number(payload.worldIndex || 0),
+        levelIndex: Number(payload.levelIndex || 0),
+        phase: 'lobby',
+        players: [player],
+        votes: {},
+        latestSnapshot: null,
+        createdAt: Date.now(),
+        lastSeen: Date.now()
+      };
+      rooms.set(code, room);
+      socket.join(code);
+      ack && ack({ ok: true, room: publicRoom(room), playerId: player.id });
+      emitRoom(room);
+      emitRoomList();
+    } catch (err) {
+      ack && ack({ ok: false, error: err.message || 'Could not create room.' });
+    }
+  });
+
+  socket.on('room:join', (payload = {}, ack) => {
+    try {
+      const code = String(payload.code || '').trim().toUpperCase();
+      const room = rooms.get(code);
+      if (!room) return ack && ack({ ok: false, error: 'Room code not found.' });
+      room.lastSeen = Date.now();
+      const humans = room.players.filter(p => !p.isAI).length;
+      if (humans >= MAX_PLAYERS) return ack && ack({ ok: false, error: 'Room is full.' });
+
+      const aiIndex = room.players.findIndex(p => p.isAI);
+      const player = {
+        id: `p_${socket.id}`,
+        socketId: socket.id,
+        name: safeName(payload.name),
+        isAI: false,
+        score: 0,
+        combo: 1,
+        accuracy: 100,
+        lives: 100,
+        status: room.phase === 'lobby' ? 'ready' : 'spectating',
+        connected: true
+      };
+      if (aiIndex >= 0) room.players.splice(aiIndex, 1, player);
+      else room.players.push(player);
+      removeExcessAI(room);
+      socket.join(code);
+      ack && ack({ ok: true, room: publicRoom(room), playerId: player.id });
+      emitRoom(room);
+      emitRoomList();
+    } catch (err) {
+      ack && ack({ ok: false, error: err.message || 'Could not join room.' });
+    }
+  });
+
+  socket.on('room:leave', (_payload = {}, ack) => {
+    const { room, player } = findRoomAndPlayer(socket);
+    if (room && player) {
+      room.players = room.players.filter(p => p.id !== player.id);
+      socket.leave(room.code);
+      if (room.players.filter(p => !p.isAI).length === 0) rooms.delete(room.code);
+      else {
+        if (room.hostId === player.id) {
+          const nextHuman = room.players.find(p => !p.isAI);
+          room.hostId = nextHuman ? nextHuman.id : room.players[0].id;
+          room.hostSocketId = nextHuman ? nextHuman.socketId : null;
+        }
+        emitRoom(room);
+      }
+    }
+    emitRoomList();
+    ack && ack({ ok: true });
+  });
+
+  socket.on('room:start', (payload = {}, ack) => {
+    const { room, player } = findRoomAndPlayer(socket);
+    if (!room || !player) return ack && ack({ ok: false, error: 'Not in a room.' });
+    if (room.hostId !== player.id) return ack && ack({ ok: false, error: 'Only the host can start.' });
+    room.mode = payload.mode || room.mode;
+    room.worldIndex = Number(payload.worldIndex || room.worldIndex || 0);
+    room.levelIndex = Number(payload.levelIndex || room.levelIndex || 0);
+    room.phase = 'playing';
+    room.votes = {};
+    if (payload.aiFill !== false) fillAI(room);
+    room.players.forEach(p => {
+      p.score = 0;
+      p.combo = 1;
+      p.accuracy = 100;
+      p.lives = 100;
+      p.status = p.isAI ? 'ai-active' : 'playing';
+    });
+    emitRoom(room);
+    io.to(room.code).emit('match:start', {
+      room: publicRoom(room),
+      seed: Math.floor(Math.random() * 1000000000),
+      startedAt: Date.now()
+    });
+    emitRoomList();
+    ack && ack({ ok: true });
+  });
+
+  socket.on('player:stats', (payload = {}) => {
+    const { room, player } = findRoomAndPlayer(socket);
+    if (!room || !player) return;
+    player.score = Math.max(0, Math.floor(Number(payload.score || 0)));
+    player.combo = Math.max(1, Math.floor(Number(payload.combo || 1)));
+    player.accuracy = Math.max(0, Math.min(100, Number(payload.accuracy ?? 100)));
+    player.lives = Math.max(0, Math.min(100, Number(payload.lives ?? 100)));
+    player.status = String(payload.status || 'playing').slice(0, 20);
+    room.lastSeen = Date.now();
+    socket.to(room.code).emit('player:stats', { id: player.id, score: player.score, combo: player.combo, accuracy: player.accuracy, lives: player.lives, status: player.status });
+  });
+
+  socket.on('game:snapshot', (payload = {}) => {
+    const { room, player } = findRoomAndPlayer(socket);
+    if (!room || !player || room.hostId !== player.id) return;
+    room.latestSnapshot = {
+      t: Date.now(),
+      enemies: Array.isArray(payload.enemies) ? payload.enemies.slice(0, 60) : [],
+      wave: Number(payload.wave || 1),
+      timer: Number(payload.timer || 0),
+      health: Number(payload.health ?? 100)
+    };
+    socket.to(room.code).emit('game:snapshot', room.latestSnapshot);
+  });
+
+  socket.on('match:complete', (payload = {}) => {
+    const { room, player } = findRoomAndPlayer(socket);
+    if (!room || !player) return;
+    room.phase = 'results';
+    room.votes = {};
+    io.to(room.code).emit('match:complete', {
+      room: publicRoom(room),
+      result: payload.result || 'complete',
+      stats: payload.stats || {}
+    });
+    emitRoom(room);
+  });
+
+  socket.on('room:vote', (payload = {}, ack) => {
+    const { room, player } = findRoomAndPlayer(socket);
+    if (!room || !player) return ack && ack({ ok: false, error: 'Not in room.' });
+    const vote = ['retry', 'next', 'lobby'].includes(payload.vote) ? payload.vote : 'retry';
+    room.votes[player.id] = vote;
+    const humanPlayers = room.players.filter(p => !p.isAI);
+    const humanVotes = humanPlayers.map(p => room.votes[p.id]).filter(Boolean);
+    const counts = humanVotes.reduce((acc, v) => ((acc[v] = (acc[v] || 0) + 1), acc), {});
+    io.to(room.code).emit('room:votes', { votes: room.votes, counts, needed: humanPlayers.length });
+
+    if (humanVotes.length >= humanPlayers.length && humanPlayers.length > 0) {
+      const nextAction = ['next', 'retry', 'lobby'].sort((a, b) => (counts[b] || 0) - (counts[a] || 0))[0];
+      room.votes = {};
+      if (nextAction === 'next') {
+        room.levelIndex = Math.min(10, room.levelIndex + 1);
+        room.phase = 'playing';
+        io.to(room.code).emit('match:advance', { action: 'next', room: publicRoom(room) });
+      } else if (nextAction === 'retry') {
+        room.phase = 'playing';
+        io.to(room.code).emit('match:advance', { action: 'retry', room: publicRoom(room) });
+      } else {
+        room.phase = 'lobby';
+        room.players = room.players.filter(p => !p.isAI);
+        room.players.forEach(p => (p.status = room.hostId === p.id ? 'host' : 'ready'));
+        io.to(room.code).emit('match:advance', { action: 'lobby', room: publicRoom(room) });
+      }
+      emitRoom(room);
+      emitRoomList();
+    }
+    ack && ack({ ok: true });
+  });
+
+  socket.on('disconnect', () => {
+    const { room, player } = findRoomAndPlayer(socket);
+    if (!room || !player) return;
+    socket.leave(room.code);
+    const idx = room.players.findIndex(p => p.id === player.id);
+    if (idx >= 0) {
+      if (room.phase === 'playing' || room.phase === 'results') {
+        const ai = makeAi(idx + 1);
+        ai.score = player.score || 0;
+        ai.combo = player.combo || 1;
+        ai.accuracy = player.accuracy ?? 100;
+        ai.lives = player.lives ?? 100;
+        ai.status = 'ai-replaced';
+        room.players.splice(idx, 1, ai);
+      } else {
+        room.players.splice(idx, 1);
+      }
+    }
+    if (room.hostId === player.id) {
+      const nextHuman = room.players.find(p => !p.isAI);
+      if (nextHuman) {
+        room.hostId = nextHuman.id;
+        room.hostSocketId = nextHuman.socketId;
+      } else if (room.players.length) {
+        room.hostId = room.players[0].id;
+        room.hostSocketId = null;
+      }
+    }
+    if (room.players.filter(p => !p.isAI).length === 0 && room.phase !== 'playing') rooms.delete(room.code);
+    else emitRoom(room);
+    emitRoomList();
+  });
+});
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [code, room] of rooms.entries()) {
+    if (now - room.createdAt > ROOM_TTL_MS || (now - room.lastSeen > ROOM_TTL_MS && room.phase !== 'playing')) {
+      rooms.delete(code);
+      emitRoomList();
+    }
+  }
+}, 1000 * 60 * 10);
+
+server.listen(PORT, () => {
+  console.log(`TypeStorm: Island Rush running on port ${PORT}`);
+});

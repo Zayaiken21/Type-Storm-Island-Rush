@@ -1,0 +1,26 @@
+{
+  "name": "typestorm-island-rush",
+  "version": "1.0.0",
+  "description": "TypeStorm: Island Rush - original 2D HTML multiplayer typing arcade game for Render.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "typing-game",
+    "canvas",
+    "socket.io",
+    "multiplayer",
+    "render",
+    "arcade"
+  ],
+  "author": "TypeStorm Project",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
