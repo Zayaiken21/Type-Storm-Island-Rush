@@ -14,6 +14,7 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 3000;
 const MAX_PLAYERS = 4;
+const WORLD_COUNT = 110;
 const ROOM_TTL_MS = 1000 * 60 * 60 * 4;
 const rooms = new Map();
 
@@ -121,6 +122,64 @@ function removeExcessAI(room) {
   room.players = [...humans, ...ai].slice(0, MAX_PLAYERS);
 }
 
+
+function votingHumans(room) {
+  return room.players.filter(p => !p.isAI && p.connected !== false && p.socketId);
+}
+
+function resetForAdvance(room, action) {
+  room.votes = {};
+  room.latestSnapshot = null;
+  if (action === 'next') {
+    room.levelIndex += 1;
+    if (room.levelIndex > 10) {
+      room.levelIndex = 0;
+      room.worldIndex = Math.min(WORLD_COUNT - 1, room.worldIndex + 1);
+    }
+  }
+  if (action === 'next' || action === 'retry') {
+    room.phase = 'playing';
+    room.seed = Math.floor(Math.random() * 1000000000);
+    room.players.forEach(p => {
+      p.lives = 100;
+      p.status = (p.connected === false || p.replacedHuman) ? 'ai-replaced' : (p.isAI ? 'ai-watching' : 'playing');
+    });
+    io.to(room.code).emit('match:advance', { action, room: publicRoom(room), seed: room.seed });
+  } else {
+    room.phase = 'lobby';
+    room.players = room.players.filter(p => !p.isAI && p.connected !== false && p.socketId);
+    if (room.players.length && !room.players.some(p => p.id === room.hostId)) {
+      room.hostId = room.players[0].id;
+      room.hostSocketId = room.players[0].socketId;
+    }
+    room.players.forEach(p => (p.status = room.hostId === p.id ? 'host' : 'ready'));
+    io.to(room.code).emit('match:advance', { action, room: publicRoom(room) });
+  }
+  emitRoom(room);
+  emitRoomList();
+}
+
+function processVotes(room) {
+  if (!room || !rooms.has(room.code)) return;
+  const humans = votingHumans(room);
+  if (humans.length === 0) {
+    rooms.delete(room.code);
+    emitRoomList();
+    return;
+  }
+  room.votes = room.votes || {};
+  const activeIds = new Set(humans.map(p => p.id));
+  for (const id of Object.keys(room.votes)) if (!activeIds.has(id)) delete room.votes[id];
+  const humanVotes = humans.map(p => room.votes[p.id]).filter(Boolean);
+  const counts = humanVotes.reduce((acc, v) => ((acc[v] = (acc[v] || 0) + 1), acc), {});
+  io.to(room.code).emit('room:votes', { votes: room.votes, counts, needed: humans.length });
+  if (room.phase === 'results' && humanVotes.length >= humans.length) {
+    const order = ['next', 'retry', 'lobby'];
+    const nextAction = order.sort((a, b) => ((counts[b] || 0) - (counts[a] || 0)) || (order.indexOf(a) - order.indexOf(b)))[0];
+    resetForAdvance(room, nextAction);
+  }
+}
+
 io.on('connection', socket => {
   socket.emit('room:list', publicRooms());
   socket.on('room:list', () => socket.emit('room:list', publicRooms()));
@@ -203,15 +262,17 @@ io.on('connection', socket => {
     const { room, player } = findRoomAndPlayer(socket);
     if (room && player) {
       room.players = room.players.filter(p => p.id !== player.id);
+      delete (room.votes || {})[player.id];
       socket.leave(room.code);
-      if (room.players.filter(p => !p.isAI).length === 0) rooms.delete(room.code);
+      if (room.hostId === player.id) {
+        const nextHuman = room.players.find(p => !p.isAI && p.connected !== false && p.socketId);
+        room.hostId = nextHuman ? nextHuman.id : room.players[0]?.id;
+        room.hostSocketId = nextHuman ? nextHuman.socketId : null;
+      }
+      if (votingHumans(room).length === 0) rooms.delete(room.code);
       else {
-        if (room.hostId === player.id) {
-          const nextHuman = room.players.find(p => !p.isAI);
-          room.hostId = nextHuman ? nextHuman.id : room.players[0].id;
-          room.hostSocketId = nextHuman ? nextHuman.socketId : null;
-        }
         emitRoom(room);
+        if (room.phase === 'results') processVotes(room);
       }
     }
     emitRoomList();
@@ -261,7 +322,9 @@ io.on('connection', socket => {
   socket.on('game:snapshot', (payload = {}) => {
     const { room, player } = findRoomAndPlayer(socket);
     if (!room || !player || room.hostId !== player.id) return;
+    if (payload.seed != null && Number(payload.seed) !== Number(room.seed)) return;
     room.latestSnapshot = {
+      seed: room.seed,
       t: Date.now(),
       enemies: Array.isArray(payload.enemies) ? payload.enemies.slice(0, 60) : [],
       wave: Number(payload.wave || 1),
@@ -277,6 +340,7 @@ io.on('connection', socket => {
     const allowed = new Set(['enemy-kill', 'boss-damage', 'player-hit', 'player-down']);
     const type = String(payload.type || '');
     if (!allowed.has(type)) return;
+    if (payload.seed != null && Number(payload.seed) !== Number(room.seed)) return;
     const evt = {
       type,
       by: player.id,
@@ -324,36 +388,11 @@ io.on('connection', socket => {
   socket.on('room:vote', (payload = {}, ack) => {
     const { room, player } = findRoomAndPlayer(socket);
     if (!room || !player) return ack && ack({ ok: false, error: 'Not in room.' });
+    if (player.isAI || player.connected === false) return ack && ack({ ok: false, error: 'Only connected players vote.' });
     const vote = ['retry', 'next', 'lobby'].includes(payload.vote) ? payload.vote : 'retry';
+    room.votes = room.votes || {};
     room.votes[player.id] = vote;
-    const humanPlayers = room.players.filter(p => !p.isAI);
-    const humanVotes = humanPlayers.map(p => room.votes[p.id]).filter(Boolean);
-    const counts = humanVotes.reduce((acc, v) => ((acc[v] = (acc[v] || 0) + 1), acc), {});
-    io.to(room.code).emit('room:votes', { votes: room.votes, counts, needed: humanPlayers.length });
-
-    if (humanVotes.length >= humanPlayers.length && humanPlayers.length > 0) {
-      const nextAction = ['next', 'retry', 'lobby'].sort((a, b) => (counts[b] || 0) - (counts[a] || 0))[0];
-      room.votes = {};
-      if (nextAction === 'next') {
-        room.levelIndex = Math.min(10, room.levelIndex + 1);
-        room.phase = 'playing';
-        room.seed = Math.floor(Math.random() * 1000000000);
-        room.players.forEach(p => { p.lives = 100; p.status = p.isAI ? 'ai-active' : 'playing'; });
-        io.to(room.code).emit('match:advance', { action: 'next', room: publicRoom(room), seed: room.seed });
-      } else if (nextAction === 'retry') {
-        room.phase = 'playing';
-        room.seed = Math.floor(Math.random() * 1000000000);
-        room.players.forEach(p => { p.lives = 100; p.status = p.isAI ? 'ai-active' : 'playing'; });
-        io.to(room.code).emit('match:advance', { action: 'retry', room: publicRoom(room), seed: room.seed });
-      } else {
-        room.phase = 'lobby';
-        room.players = room.players.filter(p => !p.isAI);
-        room.players.forEach(p => (p.status = room.hostId === p.id ? 'host' : 'ready'));
-        io.to(room.code).emit('match:advance', { action: 'lobby', room: publicRoom(room) });
-      }
-      emitRoom(room);
-      emitRoomList();
-    }
+    processVotes(room);
     ack && ack({ ok: true });
   });
 
@@ -388,8 +427,11 @@ io.on('connection', socket => {
         room.hostSocketId = null;
       }
     }
-    if (room.players.filter(p => !p.isAI).length === 0 && room.phase !== 'playing') rooms.delete(room.code);
-    else emitRoom(room);
+    if (votingHumans(room).length === 0 && room.phase !== 'playing') rooms.delete(room.code);
+    else {
+      emitRoom(room);
+      if (room.phase === 'results') processVotes(room);
+    }
     emitRoomList();
   });
 });

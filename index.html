@@ -36,7 +36,7 @@
           <strong>Play</strong><span>Adventure, multiplayer, boss rush, practice</span>
         </button>
         <button class="menu-card" data-action="openWorldMap">
-          <strong>World Map</strong><span>110 levels across 10 ocean worlds</span>
+          <strong>World Map</strong><span>1,210 levels across 110 ocean worlds</span>
         </button>
         <button class="menu-card" data-action="openShop">
           <strong>Shop</strong><span>Avatars, trails, cosmetics, upgrades</span>
@@ -247,7 +247,8 @@
         <button class="primary-btn" data-action="resumeGame">Resume</button>
         <button class="secondary-btn" data-action="restartLevel">Restart Level</button>
         <button class="secondary-btn" data-action="openSettingsFromPause">Settings</button>
-        <button class="danger-btn" data-action="quitToLobbyOrMenu">Quit to Lobby / Menu</button>
+        <button class="secondary-btn" data-action="quitToLobbyOrMenu">Quit to Lobby</button>
+        <button class="danger-btn" data-action="leaveRoomToMenu">Leave to Main Menu</button>
       </div>
     </div>
 
@@ -260,6 +261,7 @@
           <button class="primary-btn" data-vote="next">Next Level</button>
           <button class="secondary-btn" data-vote="retry">Retry</button>
           <button class="secondary-btn" data-vote="lobby">Return to Lobby</button>
+          <button class="danger-btn" data-action="leaveRoomToMenu">Leave to Main Menu</button>
         </div>
         <p id="voteStatus" class="status-line"></p>
       </div>

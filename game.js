@@ -68,8 +68,69 @@
   ];
   WORLDS.forEach((world, i) => world.enemies.push(...EXTRA_WORLD_ENEMIES[i]));
 
+
+  const GENERATED_ENEMY_TYPES = (() => {
+    const modifiers = 'sun pearl storm moon neon crystal lava frost jungle pirate cyber ancient comet thunder shadow rainbow shell star coral vortex mist ember jade sapphire ruby golden silver tiny grand turbo velvet pixel moss rune bubble cloud glitch plasma orbit magma aurora quantum temple chrome lotus mango cosmic abyss tidal lantern bloom echo prism dune typhoon'.split(' ');
+    const creatures = 'shark piranha jellyfish crab eel turtle whale ray squid octopus drone mimic slime puffer clam seahorse nautilus serpent manta angler lobster goby snapper lanternfish frogfish shellback slug remora hydra guppy narwhal starfish urchin barracuda scooter'.split(' ');
+    const classes = 'scout guardian charger trickster bomber drifter glider bruiser phantom racer biter spinner lurker knight captain wizard rover striker crawler diver snapper whisper sentinel'.split(' ');
+    const out = [];
+    const seen = new Set();
+    for (let i = 0; out.length < 1200; i++) {
+      const name = `${modifiers[i % modifiers.length]} ${creatures[(i * 7) % creatures.length]} ${classes[(i * 13) % classes.length]}`;
+      if (!seen.has(name)) { seen.add(name); out.push(name); }
+    }
+    return out;
+  })();
+
+  const GENERATED_BOSS_NAMES = (() => {
+    const titles = 'King Queen Captain Lord Lady Doctor Professor Grand Elder Mega Ultra Prime Mystic Cosmic Neon Frost Magma Thunder Moon Star Ancient Rogue Crystal Shadow Solar Tidal'.split(' ');
+    const beasts = 'Kraken Leviathan Hydra Serpent Whale Manta Octopus Turtle Phantom Golem Dragon Ray Nautilus Sentinel Titan Monarch Overlord Warden Colossus Gargantua Cyclone'.split(' ');
+    const suffixes = 'of Bubbles of Tides of Stars of Storms of Ruins of Reefs of Moons of Portals of Pearls of Keys of Thunder of Ice of Lava of Dreams of Neon of Shells'.split(' of ').map((x, i) => i ? 'of ' + x : x).filter(Boolean);
+    const out = [];
+    const seen = new Set();
+    for (let i = 0; out.length < 130; i++) {
+      const name = `${titles[i % titles.length]} ${beasts[(i * 5) % beasts.length]} ${suffixes[(i * 11) % suffixes.length]}`;
+      if (!seen.has(name)) { seen.add(name); out.push(name); }
+    }
+    return out;
+  })();
+
+  function expandWorldCatalog() {
+    const placeA = 'Bubble Sapphire Mango Thunder Crystal Neon Velvet Lunar Solar Jade Pirate Rainbow Frost Magma Ancient Cyber Storm Moonlit Alien Pearl Coral Lotus Chrome Aurora Jungle Prism Echo Cosmic Temple Ember Glacier'.split(' ');
+    const placeB = 'Atoll Lagoon Reef Bay Cove Isles Ocean Coast Abyss Harbor Trench Garden Kingdom City Ruins Passage Marsh Tide Falls Crossing Arcade Grotto Delta Canal Ring Portal Volcano'.split(' ');
+    const moods = ['steel drum sparkle', 'bouncy island bass', 'soft coral bells', 'drifting synth tide', 'jungle marimba pulse', 'heroic pirate brass', 'icy crystal chimes', 'lava drum rumble', 'moon harp echo', 'cosmic bubble plucks'];
+    const effects = ['bubble confetti', 'rune ripples', 'coin shimmer', 'leaf whirl', 'snow flakes', 'ember trails', 'neon scanlines', 'moon halos', 'star portals', 'storm sparks', 'coral bloom', 'pearl rays'];
+    const prompts = ['easy words', 'ocean phrases', 'symbol drills', 'number bursts', 'speed ladders', 'accuracy chains', 'mixed case', 'boss phrases', 'tech commands', 'island vocabulary'];
+    const palettes = [
+      ['#20c7d7','#0c80d5','#ffe066'], ['#16477a','#2aa7a7','#ffb347'], ['#0f7b52','#20d080','#f6d365'], ['#8bd7ff','#4c8fea','#e9fbff'],
+      ['#fc5c40','#7b1d36','#ffcf4a'], ['#41f4ff','#9b5cff','#16ff8f'], ['#2fd5b4','#2857b8','#ffd166'], ['#2d3e8f','#12c6f3','#f4f7ff'],
+      ['#15103d','#5535a5','#8ef5ff'], ['#481f9d','#00e0ff','#ff79d7'], ['#2ee6a8','#086375','#ffee88'], ['#ff7eb6','#7d5fff','#9affff']
+    ];
+    const targetWorlds = 110; // 10 originals + 100 additional procedural worlds.
+    for (let i = WORLDS.length; i < targetWorlds; i++) {
+      const name = `${placeA[(i * 3) % placeA.length]} ${placeB[(i * 7) % placeB.length]}`;
+      const colors = palettes[i % palettes.length];
+      const enemyStart = (i * 31) % (GENERATED_ENEMY_TYPES.length - 24);
+      WORLDS.push({
+        name,
+        mood: moods[i % moods.length],
+        boss: GENERATED_BOSS_NAMES[i % GENERATED_BOSS_NAMES.length],
+        colors,
+        enemies: GENERATED_ENEMY_TYPES.slice(enemyStart, enemyStart + 24),
+        effect: effects[i % effects.length],
+        prompt: prompts[i % prompts.length]
+      });
+    }
+    WORLDS.forEach((world, i) => {
+      const start = (i * 19) % (GENERATED_ENEMY_TYPES.length - 18);
+      world.enemies.push(...GENERATED_ENEMY_TYPES.slice(start, start + 18));
+      world.enemies = [...new Set(world.enemies)].slice(0, 44);
+    });
+  }
+  expandWorldCatalog();
+
   const GAME_MODES = [
-    { name: 'Solo Adventure', desc: 'Story progression with 110 handcrafted-style procedural levels. No AI steals your words.', online: false },
+    { name: 'Solo Adventure', desc: 'Story progression with 1,210 handcrafted-style procedural levels. No AI steals your words.', online: false },
     { name: 'Multiplayer Survival', desc: 'Create or join rooms. Last island crew standing wins.', online: true },
     { name: 'Co-op Island Defense', desc: 'Protect one base together with shared pressure.', online: true },
     { name: 'Ranked Speed Battle', desc: 'Fast prompts, timed score race, fair AI fill.', online: true },
@@ -370,6 +431,7 @@
     draw(ctx, recipe, x, y, size, t, hit = 0) {
       ctx.save();
       ctx.translate(x, y);
+      ctx.scale(-1, 1); // All enemies face left toward the divers/base.
       const wobble = Math.sin(t * 6 + x * 0.02) * size * 0.05;
       const pulse = recipe.glow === 'pulse' ? 0.5 + Math.sin(t * 4) * 0.5 : 0.5;
       if (recipe.glow !== 'none') {
@@ -705,6 +767,7 @@
       this.lastSnapshotSend = 0;
       this.powerCooldowns = Object.fromEntries(POWERUPS.map(p => [p.id, 0]));
       this.players = this.makePlayers(options.room);
+      this.reviveCrew();
       this.localPlayerId = this.app.multiplayer.playerId || 'local';
       this.suppressNetworkEvent = false;
       this.recentEvents = new Set();
@@ -794,7 +857,7 @@
     makeEventId(type, id) { return `${type}:${id}:${Math.floor(now())}`; }
     sendGameEvent(evt) {
       if (!this.multiplayer || this.suppressNetworkEvent) return;
-      this.app.multiplayer.event({ ...evt, by: this.localPlayerId, t: Date.now() });
+      this.app.multiplayer.event({ ...evt, by: this.localPlayerId, t: Date.now(), seed: this.seed });
     }
     applyGameEvent(evt) {
       if (!evt || !evt.type) return;
@@ -879,8 +942,8 @@
       }
     }
     reviveCrew() {
-      this.players.forEach(p => { p.lives = 100; p.status = p.isAI ? 'ai-active' : 'playing'; });
-      this.baseHealth = this.baseHealthMax;
+      this.players.forEach(p => { p.lives = 100; p.status = (p.connected === false || p.replacedHuman) ? 'ai-replaced' : (p.isAI ? 'ai-active' : 'playing'); });
+      this.baseHealth = this.baseHealthMax + (this.app.save.upgrades.shield * 8);
     }
     allHumansDown() {
       const humans = this.activeCrew();
@@ -1247,7 +1310,7 @@
           const promptLen = enemy ? enemy.prompt.text.length : 8 + this.rand() * 10;
           const mistake = this.rand() * 100 > profile[2];
           timer = clamp(promptLen / cps, 0.85, 9) * (mistake ? 1.32 : 1);
-          if (enemy && this.mode !== 'Ranked Speed Battle' && this.rand() > 0.42 && !enemy.boss) this.damageEnemy(enemy, enemy.hp + 1);
+          if (!this.multiplayer && enemy && this.mode !== 'Ranked Speed Battle' && this.rand() > 0.42 && !enemy.boss) this.damageEnemy(enemy, enemy.hp + 1);
           player.score = Math.floor((player.score || 0) + promptLen * (mistake ? 4 : 10) + wpm * 0.25);
           player.combo = mistake ? 1 : clamp((player.combo || 1) + 1, 1, 60);
           player.accuracy = clamp((player.accuracy || 96) + (mistake ? -0.8 : 0.08), 72, 99.8);
@@ -1267,6 +1330,7 @@
       if (this.isHost && t - this.lastSnapshotSend > 900) {
         this.lastSnapshotSend = t;
         this.app.multiplayer.snapshot({
+          seed: this.seed,
           wave: this.wave,
           timer: this.timer,
           health: this.baseHealthPercent(),
@@ -1475,8 +1539,16 @@
       if (disconnected || down) {
         ctx.fillStyle = down ? '#ff5b7f' : '#ff9f43'; ctx.beginPath(); ctx.arc(s * 0.56, -s * 0.56, s * 0.18, 0, Math.PI * 2); ctx.fill();
       }
-      ctx.fillStyle = 'rgba(5,24,56,.78)'; roundRect(ctx, -s * 1.28, s * 1.20, s * 2.56, s * 0.56, s * 0.18); ctx.fill();
-      ctx.fillStyle = '#ffffff'; ctx.font = `900 ${Math.max(8, s * 0.36)}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(`${isYou ? 'You' : String(p.name || (ai ? 'AI' : 'Player')).slice(0, 7)}${down ? ' ✕' : ''}`, 0, s * 1.48);
+      const hp = clamp(p.lives ?? 100, 0, 100);
+      ctx.fillStyle = 'rgba(5,24,56,.88)'; roundRect(ctx, -s * 1.34, s * 1.16, s * 2.68, s * 0.88, s * 0.20); ctx.fill();
+      ctx.fillStyle = '#0b1834'; roundRect(ctx, -s * 1.08, -s * 1.24, s * 2.16, s * 0.24, s * 0.12); ctx.fill();
+      ctx.fillStyle = hp > 55 ? '#46f4a8' : hp > 25 ? '#ffe066' : '#ff5b7f'; roundRect(ctx, -s * 1.08, -s * 1.24, s * 2.16 * (hp / 100), s * 0.24, s * 0.12); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.52)'; ctx.lineWidth = Math.max(1, s * 0.035); roundRect(ctx, -s * 1.08, -s * 1.24, s * 2.16, s * 0.24, s * 0.12); ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.font = `900 ${Math.max(8, s * 0.35)}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(`${isYou ? 'You' : String(p.name || (ai ? 'AI' : 'Player')).slice(0, 7)}${down ? ' ✕' : ''}`, 0, s * 1.42);
+      ctx.font = `900 ${Math.max(7, s * 0.28)}px system-ui`;
+      ctx.fillStyle = hp > 55 ? '#adffd8' : hp > 25 ? '#ffeeb0' : '#ffd0da';
+      ctx.fillText(`${Math.round(hp)} HP`, 0, s * 1.76);
       ctx.restore();
     }
     drawEnemy(ctx, e) {
@@ -1652,6 +1724,7 @@
         restartLevel: () => this.game.restart(),
         openSettingsFromPause: () => this.openSettingsFromPause(),
         quitToLobbyOrMenu: () => this.quitToLobbyOrMenu(),
+        leaveRoomToMenu: () => this.leaveRoomToMenu(),
         resetSettings: () => this.resetSettings(),
         fullscreen: () => this.fullscreen()
       };
@@ -1727,7 +1800,7 @@
       }
     }
     quickPlay() {
-      const global = clamp(this.save.unlockedGlobalLevel || 1, 1, 110) - 1;
+      const global = clamp(this.save.unlockedGlobalLevel || 1, 1, WORLDS.length * 11) - 1;
       this.startGame({ mode: 'Solo Adventure', worldIndex: Math.floor(global / 11), levelIndex: global % 11 });
     }
     startGame(opts = {}) { this.game.start(opts); }
@@ -1776,7 +1849,7 @@
       this.save.pearls += pearls;
       this.save.xp += Math.floor(score / 50) + (complete ? 25 : 5);
       this.save.playerLevel = 1 + Math.floor(this.save.xp / 260);
-      if (complete) this.save.unlockedGlobalLevel = Math.max(this.save.unlockedGlobalLevel || 1, Math.min(110, globalLevel + 1));
+      if (complete) this.save.unlockedGlobalLevel = Math.max(this.save.unlockedGlobalLevel || 1, Math.min(WORLDS.length * 11, globalLevel + 1));
       const key = `L${globalLevel}`;
       this.save.best[key] = Math.max(this.save.best[key] || 0, score);
       Store.saveGame(this.save);
@@ -1800,14 +1873,14 @@
       if (vote === 'retry') this.game.restart();
       if (vote === 'next') {
         let wi = this.game.worldIndex, li = this.game.levelIndex + 1;
-        if (li > 10) { wi = Math.min(9, wi + 1); li = 0; }
+        if (li > 10) { wi = Math.min(WORLDS.length - 1, wi + 1); li = 0; }
         this.startGame({ mode: this.game.mode, worldIndex: wi, levelIndex: li });
       }
       if (vote === 'lobby') this.showScreen('mainMenu');
     }
     showVoteStatus(payload) {
       const c = payload.counts || {};
-      $('voteStatus').textContent = `Votes: Next ${c.next || 0}, Retry ${c.retry || 0}, Lobby ${c.lobby || 0} / ${payload.needed || 1}`;
+      if ($('voteStatus')) $('voteStatus').textContent = `Votes: Next ${c.next || 0}, Retry ${c.retry || 0}, Lobby ${c.lobby || 0} / ${payload.needed || 1}`;
     }
     handleVoteAdvance(payload) {
       this.hideOverlay('resultOverlay');
@@ -1889,6 +1962,15 @@
       this.hideOverlay('pauseOverlay');
       if (this.game?.multiplayer && this.multiplayer.room) this.showScreen('lobbyScreen');
       else this.showScreen('mainMenu');
+    }
+    async leaveRoomToMenu() {
+      this.hideOverlay('pauseOverlay');
+      this.hideOverlay('resultOverlay');
+      if (this.multiplayer?.room) await this.multiplayer.leaveRoom();
+      if (this.game) { this.game.running = false; this.game.resultShown = false; }
+      this.multiplayer.room = null;
+      this.showScreen('mainMenu');
+      this.toast('Left the room.');
     }
     openSettingsFromPause() {
       this.state.returnToPause = true;
