@@ -139,7 +139,7 @@
             <span id="hostBadge" class="pill">Host</span>
           </div>
           <div id="lobbyPlayers" class="player-list"></div>
-          <p class="mini-copy">Max 7 players. Disconnected players become fair AI during active matches.</p>
+          <p class="mini-copy">1–4 players per room. Disconnected players clearly show as disconnected and can be safely taken over by fair AI.</p>
           <div class="roomActions">
             <button id="startMatchBtn" class="primary-btn" data-action="hostStartMatch">Start Match</button>
             <button class="secondary-btn" data-action="copyRoomCode">Copy Code</button>
@@ -151,7 +151,7 @@
           <label>World<select id="lobbyWorldSelect"></select></label>
           <label>Level<select id="lobbyLevelSelect"></select></label>
           <label>Mode<select id="lobbyModeSelect"></select></label>
-          <label class="toggle"><input id="aiFillToggle" type="checkbox" checked /> <span>Fill empty slots with AI</span></label>
+          <label class="toggle"><input id="aiFillToggle" type="checkbox" /> <span>Optional AI fill for empty slots</span></label>
           <div id="lobbyWorldPreview" class="world-preview-card">Choose a world to preview the boss and effect.</div>
         </div>
       </div>
@@ -228,8 +228,10 @@
           <button class="pause-btn" data-action="pauseGame">Ⅱ</button>
         </div>
         <div class="hud-row bottom">
-          <div class="target-box">Target: <b id="hudTarget">None</b></div>
-          <div class="wave-box">Wave <b id="hudWave">1</b> • Time <b id="hudTimer">0:00</b></div>
+          <div class="play-status-row">
+            <div class="target-box">Target: <b id="hudTarget">None</b></div>
+            <div class="wave-box">Wave <b id="hudWave">1</b> • Time <b id="hudTimer">0:00</b></div>
+          </div>
           <div id="powerButtons" class="power-buttons"></div>
         </div>
       </div>

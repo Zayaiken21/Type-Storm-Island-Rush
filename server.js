@@ -13,7 +13,7 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 3000;
-const MAX_PLAYERS = 7;
+const MAX_PLAYERS = 4;
 const ROOM_TTL_MS = 1000 * 60 * 60 * 4;
 const rooms = new Map();
 
@@ -61,6 +61,7 @@ function publicRoom(room) {
     mode: room.mode,
     worldIndex: room.worldIndex,
     levelIndex: room.levelIndex,
+    seed: room.seed || null,
     phase: room.phase,
     createdAt: room.createdAt,
     players: room.players.map(p => ({
@@ -149,6 +150,7 @@ io.on('connection', socket => {
         phase: 'lobby',
         players: [player],
         votes: {},
+        seed: null,
         latestSnapshot: null,
         createdAt: Date.now(),
         lastSeen: Date.now()
@@ -225,6 +227,7 @@ io.on('connection', socket => {
     room.levelIndex = Number(payload.levelIndex || room.levelIndex || 0);
     room.phase = 'playing';
     room.votes = {};
+    room.seed = Math.floor(Math.random() * 1000000000);
     if (payload.aiFill !== false) fillAI(room);
     room.players.forEach(p => {
       p.score = 0;
@@ -236,7 +239,7 @@ io.on('connection', socket => {
     emitRoom(room);
     io.to(room.code).emit('match:start', {
       room: publicRoom(room),
-      seed: Math.floor(Math.random() * 1000000000),
+      seed: room.seed,
       startedAt: Date.now()
     });
     emitRoomList();
@@ -268,9 +271,46 @@ io.on('connection', socket => {
     socket.to(room.code).emit('game:snapshot', room.latestSnapshot);
   });
 
+  socket.on('game:event', (payload = {}) => {
+    const { room, player } = findRoomAndPlayer(socket);
+    if (!room || !player || room.phase !== 'playing') return;
+    const allowed = new Set(['enemy-kill', 'boss-damage', 'player-hit', 'player-down']);
+    const type = String(payload.type || '');
+    if (!allowed.has(type)) return;
+    const evt = {
+      type,
+      by: player.id,
+      t: Number(payload.t || Date.now()),
+      enemyId: payload.enemyId != null ? Number(payload.enemyId) : null,
+      playerId: payload.playerId ? String(payload.playerId).slice(0, 80) : null,
+      damage: Number(payload.damage || 0),
+      hp: payload.hp != null ? Number(payload.hp) : undefined,
+      phase: payload.phase != null ? Number(payload.phase) : undefined,
+      prompt: payload.prompt ? String(payload.prompt).slice(0, 120) : undefined
+    };
+    if (type === 'player-hit' || type === 'player-down') {
+      // Only the host authoritatively decides damage/death so one player dying never ends a room by accident.
+      if (room.hostId !== player.id) return;
+    }
+    if (type === 'player-hit' && evt.playerId) {
+      const victim = room.players.find(p => p.id === evt.playerId);
+      if (victim) {
+        victim.lives = Math.max(0, Math.min(100, (victim.lives ?? 100) - Math.max(0, evt.damage || 0)));
+        victim.status = victim.lives <= 0 ? 'down' : 'hit';
+      }
+    }
+    if (type === 'player-down' && evt.playerId) {
+      const victim = room.players.find(p => p.id === evt.playerId);
+      if (victim) { victim.lives = 0; victim.status = 'down'; }
+    }
+    io.to(room.code).emit('game:event', evt);
+    emitRoom(room);
+  });
+
   socket.on('match:complete', (payload = {}) => {
     const { room, player } = findRoomAndPlayer(socket);
     if (!room || !player) return;
+    if (room.phase === 'playing' && room.hostId !== player.id) return;
     room.phase = 'results';
     room.votes = {};
     io.to(room.code).emit('match:complete', {
@@ -297,10 +337,14 @@ io.on('connection', socket => {
       if (nextAction === 'next') {
         room.levelIndex = Math.min(10, room.levelIndex + 1);
         room.phase = 'playing';
-        io.to(room.code).emit('match:advance', { action: 'next', room: publicRoom(room) });
+        room.seed = Math.floor(Math.random() * 1000000000);
+        room.players.forEach(p => { p.lives = 100; p.status = p.isAI ? 'ai-active' : 'playing'; });
+        io.to(room.code).emit('match:advance', { action: 'next', room: publicRoom(room), seed: room.seed });
       } else if (nextAction === 'retry') {
         room.phase = 'playing';
-        io.to(room.code).emit('match:advance', { action: 'retry', room: publicRoom(room) });
+        room.seed = Math.floor(Math.random() * 1000000000);
+        room.players.forEach(p => { p.lives = 100; p.status = p.isAI ? 'ai-active' : 'playing'; });
+        io.to(room.code).emit('match:advance', { action: 'retry', room: publicRoom(room), seed: room.seed });
       } else {
         room.phase = 'lobby';
         room.players = room.players.filter(p => !p.isAI);

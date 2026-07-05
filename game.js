@@ -8,7 +8,7 @@
   const now = () => performance.now();
   const SAVE_KEY = 'typestorm_island_rush_save_v1';
   const SETTINGS_KEY = 'typestorm_island_rush_settings_v1';
-  const MAX_ROOM_PLAYERS = 7;
+  const MAX_ROOM_PLAYERS = 4;
 
   function mulberry32(seed) {
     let a = seed >>> 0;
@@ -54,8 +54,22 @@
     { name: 'Alien Star Ocean', mood: 'cosmic plucks and pulses', boss: 'Star Kraken', colors: ['#481f9d', '#00e0ff', '#ff79d7'], enemies: ['alien squid', 'star drone', 'cosmic crab', 'void whale', 'mechanical octopus', 'orbit puffer', 'comet ray', 'ufo clam', 'plasma eel', 'starlight nautilus'], effect: 'star portals', prompt: 'boss challenge phrases' }
   ];
 
+  const EXTRA_WORLD_ENEMIES = [
+    ['kitefin goby', 'rainbow shellback', 'bubble manta', 'reef scooter', 'sunburst slug'],
+    ['barrel blenny', 'hooktail eel', 'rumble ray', 'patchwork puffer', 'doubloon diverfish'],
+    ['mango mudskipper', 'bamboo snapper', 'petal jelly', 'vine snapper', 'marsh lanternfish'],
+    ['snowcap seal', 'frostbite goby', 'icicle squid', 'sled ray', 'blueglass crab'],
+    ['lava lanternfish', 'basalt biter', 'magma manta', 'flarefin eel', 'charcoal chomp'],
+    ['glitch guppy', 'router ray', 'neon nautilus', 'spark squid', 'proxy piranha'],
+    ['relic remora', 'pillar puffer', 'sphinx squid', 'mosaic manta', 'trident crab'],
+    ['gust goby', 'hurricane ray', 'static snapper', 'rainbow thunderfish', 'tempest turtle'],
+    ['dream drifter', 'eclipse eel', 'lantern phantom', 'midnight manta', 'stargaze crab'],
+    ['nebula nautilus', 'quasar squid', 'meteor manta', 'orbit eel', 'crystal cometfish']
+  ];
+  WORLDS.forEach((world, i) => world.enemies.push(...EXTRA_WORLD_ENEMIES[i]));
+
   const GAME_MODES = [
-    { name: 'Solo Adventure', desc: 'Story progression with AI support and 110 levels.', online: false },
+    { name: 'Solo Adventure', desc: 'Story progression with 110 handcrafted-style procedural levels. No AI steals your words.', online: false },
     { name: 'Multiplayer Survival', desc: 'Create or join rooms. Last island crew standing wins.', online: true },
     { name: 'Co-op Island Defense', desc: 'Protect one base together with shared pressure.', online: true },
     { name: 'Ranked Speed Battle', desc: 'Fast prompts, timed score race, fair AI fill.', online: true },
@@ -581,6 +595,7 @@
         this.socket.on('match:start', (payload) => { this.room = payload.room; this.app.startGameFromRoom(payload.room, payload.seed); });
         this.socket.on('player:stats', (payload) => { if (this.app.game) this.app.game.updateRemoteStats(payload); });
         this.socket.on('game:snapshot', (snap) => { if (this.app.game) this.app.game.receiveSnapshot(snap); });
+        this.socket.on('game:event', (evt) => { if (this.app.game) this.app.game.applyGameEvent(evt); });
         this.socket.on('match:complete', (payload) => { if (this.app.game) this.app.game.finishLevel(payload.result || 'complete', true); });
         this.socket.on('room:votes', (payload) => this.app.showVoteStatus(payload));
         this.socket.on('match:advance', (payload) => this.app.handleVoteAdvance(payload));
@@ -613,6 +628,7 @@
     stats(stats) { if (this.socket && this.connected && this.room) this.socket.emit('player:stats', stats); }
     snapshot(snap) { if (this.socket && this.connected && this.room) this.socket.emit('game:snapshot', snap); }
     complete(result, stats) { if (this.socket && this.connected && this.room) this.socket.emit('match:complete', { result, stats }); }
+    event(payload) { if (this.socket && this.connected && this.room) this.socket.emit('game:event', payload); }
     vote(vote) { return this.emitAck('room:vote', { vote }); }
     isHost() { return this.room && this.playerId && this.room.hostId === this.playerId; }
   }
@@ -689,6 +705,9 @@
       this.lastSnapshotSend = 0;
       this.powerCooldowns = Object.fromEntries(POWERUPS.map(p => [p.id, 0]));
       this.players = this.makePlayers(options.room);
+      this.localPlayerId = this.app.multiplayer.playerId || 'local';
+      this.suppressNetworkEvent = false;
+      this.recentEvents = new Set();
       this.aiTimers = new Map();
       this.paused = false;
       this.running = true;
@@ -703,23 +722,171 @@
     makePlayers(room) {
       if (room && room.players) return room.players.map(p => ({ ...p }));
       const player = { id: 'local', name: 'You', isAI: false, score: 0, combo: 1, accuracy: 100, lives: 100, status: 'playing' };
-      const aiCount = this.mode === 'Local Offline AI Match' ? 6 : this.mode === 'Solo Adventure' ? 2 : 0;
+      const aiCount = this.mode === 'Local Offline AI Match' ? 3 : 0;
       const skills = ['easy', 'medium', 'hard', 'expert', 'medium', 'hard'];
       const names = ['CoralBot', 'PearlPilot', 'TideTyper', 'NeonKeys', 'LagoonLex', 'ReefRacer'];
       return [player, ...Array.from({ length: aiCount }, (_, i) => ({ id: `local_ai_${i}`, name: names[i], isAI: true, skill: skills[i], score: 0, combo: 1, accuracy: 100, lives: 100, status: 'ai-active' }))];
     }
     applyRoom(room) {
       this.room = room;
-      if (room && room.players) this.players = room.players.map(p => ({ ...p }));
+      if (!room || !room.players) return;
+      const old = new Map(this.players.map(p => [p.id, p]));
+      this.players = room.players.slice(0, MAX_ROOM_PLAYERS).map(p => ({ ...(old.get(p.id) || {}), ...p }));
+      if (room.hostId) this.isHost = !this.multiplayer || this.app.multiplayer.playerId === room.hostId;
     }
     updateRemoteStats(payload) {
       const p = this.players.find(x => x.id === payload.id);
       if (p) Object.assign(p, payload);
       else this.players.push({ ...payload, name: 'Player', isAI: false });
     }
-    receiveSnapshot(_snap) {
-      // Local prediction stays authoritative for responsiveness. Snapshots update HUD-level info through room stats.
+    receiveSnapshot(snap) {
+      if (!this.multiplayer || this.isHost || !snap) return;
+      if (Number.isFinite(snap.wave)) this.wave = snap.wave;
+      if (Number.isFinite(snap.timer)) this.timer = Math.max(this.timer, snap.timer);
+      const incoming = Array.isArray(snap.enemies) ? snap.enemies : [];
+      const ids = new Set(incoming.map(e => e.id));
+      for (const se of incoming) {
+        let enemy = this.enemies.find(e => e.id === se.id);
+        if (!enemy) {
+          enemy = {
+            id: se.id,
+            type: se.type || 'reef fish',
+            recipe: se.recipe || this.spriteFactory.recipe(this.worldIndex, this.seed + se.id * 45, se.type || 'reef fish', !!se.b),
+            prompt: { text: String(se.p || 'wave'), category: 'sync', difficulty: this.difficulty },
+            x: se.x || this.w + 40,
+            y: se.y || this.h * 0.5,
+            baseY: se.baseY || se.y || this.h * 0.5,
+            targetPlayerId: se.targetPlayerId || null,
+            targetY: se.targetY || se.y || this.h * 0.5,
+            size: se.size || 34,
+            speed: se.speed || 30,
+            hp: se.hp || String(se.p || 'wave').length,
+            maxHp: se.maxHp || se.hp || String(se.p || 'wave').length,
+            progress: se.progress || 0,
+            value: se.value || 20,
+            wave: se.wave || this.wave,
+            hit: 0,
+            shake: 0,
+            boss: !!se.b,
+            phase: se.phase || 1,
+            maxPhase: se.maxPhase || 6,
+            cinematic: 0
+          };
+          this.enemies.push(enemy);
+        } else {
+          enemy.x = lerp(enemy.x, se.x, 0.45);
+          enemy.y = lerp(enemy.y, se.y, 0.45);
+          enemy.baseY = se.baseY ?? enemy.baseY;
+          enemy.targetY = se.targetY ?? enemy.targetY;
+          enemy.targetPlayerId = se.targetPlayerId || enemy.targetPlayerId;
+          enemy.hp = se.hp ?? enemy.hp;
+          enemy.maxHp = se.maxHp ?? enemy.maxHp;
+          enemy.size = se.size || enemy.size;
+          enemy.speed = se.speed || enemy.speed;
+          enemy.boss = !!se.b;
+          enemy.phase = se.phase || enemy.phase;
+          enemy.maxPhase = se.maxPhase || enemy.maxPhase;
+          enemy.prompt.text = String(se.p || enemy.prompt.text);
+        }
+      }
+      this.enemies = this.enemies.filter(e => ids.has(e.id) || e.hit > 0.05);
     }
+    makeEventId(type, id) { return `${type}:${id}:${Math.floor(now())}`; }
+    sendGameEvent(evt) {
+      if (!this.multiplayer || this.suppressNetworkEvent) return;
+      this.app.multiplayer.event({ ...evt, by: this.localPlayerId, t: Date.now() });
+    }
+    applyGameEvent(evt) {
+      if (!evt || !evt.type) return;
+      const key = `${evt.type}:${evt.enemyId || evt.playerId || ''}:${evt.by || ''}:${evt.t || ''}`;
+      if (this.recentEvents.has(key)) return;
+      this.recentEvents.add(key);
+      if (this.recentEvents.size > 80) this.recentEvents = new Set([...this.recentEvents].slice(-40));
+      this.suppressNetworkEvent = true;
+      try {
+        if (evt.type === 'enemy-kill') {
+          const e = this.enemies.find(x => x.id === evt.enemyId);
+          if (e) this.removeEnemy(e, false);
+        }
+        if (evt.type === 'boss-damage') {
+          const e = this.enemies.find(x => x.id === evt.enemyId);
+          if (e) {
+            e.hp = Math.max(0, Number(evt.hp ?? e.hp));
+            e.phase = Number(evt.phase || e.phase);
+            e.progress = 0;
+            e.prompt.text = String(evt.prompt || e.prompt.text);
+            if (e.hp <= 0) this.removeEnemy(e, false);
+          }
+        }
+        if (evt.type === 'player-hit') this.applyPlayerHit(evt.playerId, Number(evt.damage || 0), evt.enemyId, false);
+        if (evt.type === 'player-down') this.setPlayerDown(evt.playerId, false);
+      } finally {
+        this.suppressNetworkEvent = false;
+      }
+    }
+    getLocalPlayer() {
+      return this.players.find(p => p.id === this.localPlayerId) || this.players.find(p => !p.isAI) || this.players[0];
+    }
+    activeCrew() {
+      const crew = this.players.filter(p => !p.isAI || p.replacedHuman || p.connected === false).slice(0, MAX_ROOM_PLAYERS);
+      return crew.length ? crew : this.players.slice(0, MAX_ROOM_PLAYERS);
+    }
+    livingCrew() {
+      return this.activeCrew().filter(p => (p.lives ?? 100) > 0 && p.status !== 'down');
+    }
+    playerPoint(playerOrId, indexFallback = 0) {
+      const id = typeof playerOrId === 'string' ? playerOrId : playerOrId?.id;
+      const crew = this.activeCrew();
+      const idx = Math.max(0, crew.findIndex(p => p.id === id));
+      const i = idx >= 0 ? idx : indexFallback;
+      const area = this.playArea();
+      const base = this.basePoint();
+      const n = Math.max(1, crew.length);
+      const spread = area.bottom - area.top;
+      const y = clamp(area.top + spread * ((i + 1) / (n + 1)), area.top + 30, area.bottom - 30);
+      const x = clamp(base.x + 70 + (i % 2) * 24, 76, Math.min(this.w * 0.28, 230));
+      return { x, y };
+    }
+    pickTargetPlayer() {
+      const living = this.livingCrew();
+      const pool = living.length ? living : this.activeCrew();
+      return choice(pool, this.rand) || this.getLocalPlayer();
+    }
+    applyPlayerHit(playerId, damage, enemyId, broadcast = true) {
+      const player = this.players.find(p => p.id === playerId) || this.getLocalPlayer();
+      if (!player) return;
+      player.lives = clamp((player.lives ?? 100) - damage, 0, 100);
+      player.status = player.lives <= 0 ? 'down' : 'hit';
+      const pt = this.playerPoint(player.id);
+      this.spawnParticles(pt.x, pt.y, player.lives <= 0 ? '#ff5b7f' : '#ffe066', player.lives <= 0 ? 22 : 10);
+      if (enemyId) {
+        const e = this.enemies.find(x => x.id === enemyId);
+        if (e) this.removeEnemy(e, false);
+      }
+      if (broadcast) this.sendGameEvent({ type: 'player-hit', playerId: player.id, damage, enemyId });
+      if (player.lives <= 0) this.setPlayerDown(player.id, broadcast);
+    }
+    setPlayerDown(playerId, broadcast = true) {
+      const p = this.players.find(x => x.id === playerId);
+      if (!p) return;
+      p.lives = 0;
+      p.status = 'down';
+      if (broadcast) this.sendGameEvent({ type: 'player-down', playerId });
+      if (p.id === this.localPlayerId) {
+        this.typedBuffer = '';
+        this.activeId = null;
+        this.app.toast('Your diver is down — spectating until the next round.');
+      }
+    }
+    reviveCrew() {
+      this.players.forEach(p => { p.lives = 100; p.status = p.isAI ? 'ai-active' : 'playing'; });
+      this.baseHealth = this.baseHealthMax;
+    }
+    allHumansDown() {
+      const humans = this.activeCrew();
+      return humans.length > 0 && humans.every(p => (p.lives ?? 100) <= 0 || p.status === 'down');
+    }
+
     applyPowerButtons() {
       const box = $('powerButtons');
       box.innerHTML = '';
@@ -734,7 +901,7 @@
       });
     }
     usePower(id) {
-      if (!this.running || this.paused || this.powerCooldowns[id] > 0) return;
+      if (!this.running || this.paused || this.powerCooldowns[id] > 0 || this.getLocalPlayer()?.status === 'down') return;
       const upgradeFactor = 1 - Math.min(0.28, this.app.save.upgrades.power * 0.04);
       const baseCooldown = (POWERUPS.find(p => p.id === id)?.cooldown || 20) * upgradeFactor;
       this.powerCooldowns[id] = baseCooldown;
@@ -742,8 +909,16 @@
       if (id === 'freeze') this.freezeTimer = 4.5;
       if (id === 'slow') this.slowTimer = 7;
       if (id === 'double') this.doubleTimer = 10;
-      if (id === 'shield') this.baseHealth = clamp(this.baseHealth + 22, 0, this.baseHealthMax + 60);
-      if (id === 'repair') this.baseHealth = clamp(this.baseHealth + 34, 0, this.baseHealthMax + 60);
+      if (id === 'shield') {
+        const local = this.getLocalPlayer();
+        if (this.multiplayer && local) local.lives = clamp((local.lives ?? 100) + 22, 0, 100);
+        else this.baseHealth = clamp(this.baseHealth + 22, 0, this.baseHealthMax + 60);
+      }
+      if (id === 'repair') {
+        const local = this.getLocalPlayer();
+        if (this.multiplayer && local) local.lives = clamp((local.lives ?? 100) + 34, 0, 100);
+        else this.baseHealth = clamp(this.baseHealth + 34, 0, this.baseHealthMax + 60);
+      }
       if (id === 'accuracy') this.accuracyShield = 8;
       if (id === 'lightning') this.damageEnemies(4, 999, true);
       if (id === 'combo') {
@@ -766,10 +941,13 @@
       e.hp -= damage;
       e.hit = 0.25;
       this.spawnParticles(e.x, e.y, e.boss ? '#ffe066' : '#46f4a8', e.boss ? 18 : 8);
-      if (e.hp <= 0) this.removeEnemy(e, true);
+      if (e.hp <= 0) {
+        this.removeEnemy(e, true);
+        this.sendGameEvent({ type: 'enemy-kill', enemyId: e.id });
+      }
     }
     onPointer(e) {
-      if (!this.running || this.paused) return;
+      if (!this.running || this.paused || this.getLocalPlayer()?.status === 'down') return;
       const rect = this.canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
@@ -797,8 +975,9 @@
       return target;
     }
     handleKey(key) {
-      if (!this.running || this.paused || this.resultShown) return;
+      if (!this.running || this.resultShown) return;
       if (key === 'Escape') return this.pause();
+      if (this.paused || this.getLocalPlayer()?.status === 'down') return;
       if (key === 'Backspace') {
         this.typedBuffer = this.typedBuffer.slice(0, -1);
         const target = this.getTarget();
@@ -850,14 +1029,17 @@
         if (target.hp <= 0 || target.phase > target.maxPhase) {
           this.removeEnemy(target, true);
           this.bossDefeated = true;
+          this.sendGameEvent({ type: 'enemy-kill', enemyId: target.id });
         } else {
           target.prompt = this.promptManager.getPrompt({ difficulty: 9 + this.worldIndex, worldIndex: this.worldIndex, boss: true, seed: this.seed + target.phase * 101 });
           target.maxHp = Math.max(target.maxHp, target.hp);
           target.shake = 0.35;
           this.spawnMinions(2 + Math.floor(target.phase / 2));
+          this.sendGameEvent({ type: 'boss-damage', enemyId: target.id, hp: target.hp, phase: target.phase, prompt: target.prompt.text });
         }
       } else {
         this.removeEnemy(target, true);
+        this.sendGameEvent({ type: 'enemy-kill', enemyId: target.id });
       }
       this.activeId = null;
       this.typedBuffer = '';
@@ -886,6 +1068,8 @@
       const yMin = Math.max(area.top + size * 0.5, this.h * 0.14);
       const yMax = Math.max(yMin + 34, area.bottom - size * 0.7);
       const prompt = this.promptManager.getPrompt({ difficulty: this.difficulty + (minion ? -1 : 0), worldIndex: this.worldIndex, kids: this.kids, seed: this.seed + id * 23 });
+      const targetPlayer = this.pickTargetPlayer();
+      const targetPoint = this.playerPoint(targetPlayer?.id);
       this.enemies.push({
         id,
         type,
@@ -893,7 +1077,9 @@
         prompt,
         x: this.w + size + this.rand() * 120,
         y: lerp(yMin, yMax, this.rand()),
-        baseY: 0,
+        baseY: lerp(yMin, yMax, this.rand()),
+        targetPlayerId: targetPlayer?.id || null,
+        targetY: targetPoint.y,
         size,
         speed: (22 + this.difficulty * 5 + this.rand() * 24) * (this.mode.includes('Ranked') ? 1.12 : 1),
         hp: prompt.text.length,
@@ -915,6 +1101,7 @@
       const hp = 260 + this.worldIndex * 45 + this.levelIndex * 25;
       const area = this.playArea();
       const bossY = lerp(area.top, area.bottom, 0.48);
+      const targetPlayer = this.pickTargetPlayer();
       this.enemies.push({
         id: ++this.enemyId,
         type: world.boss,
@@ -923,6 +1110,8 @@
         x: this.w + 160,
         y: bossY,
         baseY: bossY,
+        targetPlayerId: targetPlayer?.id || null,
+        targetY: this.playerPoint(targetPlayer?.id).y,
         size: clamp(76 + this.worldIndex * 4, 76, 124),
         speed: 12 + this.worldIndex * 1.6,
         hp,
@@ -989,23 +1178,38 @@
         e.hit = Math.max(0, e.hit - dt * 3);
         e.shake = Math.max(0, e.shake - dt * 2.8);
         e.cinematic = Math.max(0, (e.cinematic || 0) - dt);
+        const targetPoint = this.multiplayer ? this.playerPoint(e.targetPlayerId) : this.basePoint();
+        e.targetY = targetPoint.y;
         if (e.boss && e.cinematic > 0) {
           e.x = lerp(this.w + 160, this.w * 0.72, 1 - e.cinematic / 2.6);
         } else {
           e.x -= e.speed * motion * dt;
-          e.y += Math.sin(this.timer * 2 + e.id) * dt * 18;
+          const swim = Math.sin(this.timer * (1.6 + (e.id % 3) * 0.35) + e.id) * (e.boss ? 10 : 22);
+          e.y = lerp(e.y, e.targetY + swim, clamp(dt * 1.35, 0, 1));
         }
-        if (!e.boss && e.x < 92) {
-          this.baseHealth -= e.boss ? 30 : clamp(8 + this.difficulty * 1.4, 8, 22);
-          this.spawnParticles(94, e.y, '#ff5b7f', 12);
-          this.removeEnemy(e, false);
-          this.combo = 1;
-          this.audio.beep('hit');
+        const hitX = this.multiplayer ? targetPoint.x + 8 : 92;
+        if (!e.boss && e.x < hitX) {
+          if (!this.multiplayer) {
+            this.baseHealth -= clamp(8 + this.difficulty * 1.4, 8, 22);
+            this.spawnParticles(94, e.y, '#ff5b7f', 12);
+            this.removeEnemy(e, false);
+            this.combo = 1;
+            this.audio.beep('hit');
+          } else if (this.isHost) {
+            this.applyPlayerHit(e.targetPlayerId, clamp(22 + this.difficulty * 2.2, 18, 36), e.id, true);
+            this.audio.beep('hit');
+          }
         }
-        if (e.boss && e.x < 130) {
-          this.baseHealth -= 35;
-          e.x = this.w * 0.65;
-          e.shake = 0.5;
+        if (e.boss && e.x < hitX + 26) {
+          if (!this.multiplayer) {
+            this.baseHealth -= 35;
+            e.x = this.w * 0.65;
+            e.shake = 0.5;
+          } else if (this.isHost) {
+            this.applyPlayerHit(e.targetPlayerId, 38, null, true);
+            e.x = this.w * 0.65;
+            e.shake = 0.5;
+          }
         }
       }
       for (const p of [...this.particles]) {
@@ -1016,13 +1220,19 @@
         if (p.life <= 0) this.particles.splice(this.particles.indexOf(p), 1);
       }
       this.updateAI(dt);
-      if (this.baseHealth <= 0) this.finishLevel('gameover');
+      if (this.multiplayer) {
+        if (this.isHost && this.allHumansDown()) this.finishLevel('gameover');
+        else if (this.isHost && this.isBossLevel && this.bossSpawned && !this.enemies.some(e => e.boss) && this.bossDefeated) this.finishLevel('complete');
+        else if (this.isHost && !this.isBossLevel && this.wave >= this.wavesTotal && this.spawnedInWave >= this.maxPerWave && this.enemies.length === 0) this.finishLevel('complete');
+      } else if (this.baseHealth <= 0) this.finishLevel('gameover');
       else if (this.isBossLevel && this.bossSpawned && !this.enemies.some(e => e.boss) && this.bossDefeated) this.finishLevel('complete');
       else if (!this.isBossLevel && this.wave >= this.wavesTotal && this.spawnedInWave >= this.maxPerWave && this.enemies.length === 0) this.finishLevel('complete');
       if (now() - this.lastHud > 120) this.updateHud();
       this.sendNetwork(dt);
     }
     updateAI(dt) {
+      if (this.mode === 'Solo Adventure') return;
+      if (this.multiplayer && !this.isHost) return;
       const skillMap = {
         easy: [20, 35, 88], medium: [35, 55, 91], hard: [55, 80, 94], expert: [80, 110, 96]
       };
@@ -1051,7 +1261,8 @@
       const t = now();
       if (t - this.lastStatsSend > 450) {
         this.lastStatsSend = t;
-        this.app.multiplayer.stats({ score: this.score, combo: this.combo, accuracy: this.accuracy(), lives: this.baseHealthPercent(), status: this.paused ? 'paused' : 'playing' });
+        const local = this.getLocalPlayer();
+        this.app.multiplayer.stats({ score: this.score, combo: this.combo, accuracy: this.accuracy(), lives: local?.lives ?? this.baseHealthPercent(), status: local?.status === 'down' ? 'down' : (this.paused ? 'paused' : 'playing') });
       }
       if (this.isHost && t - this.lastSnapshotSend > 900) {
         this.lastSnapshotSend = t;
@@ -1059,7 +1270,7 @@
           wave: this.wave,
           timer: this.timer,
           health: this.baseHealthPercent(),
-          enemies: this.enemies.slice(0, 30).map(e => ({ id: e.id, x: Math.round(e.x), y: Math.round(e.y), p: e.prompt.text, hp: Math.round(e.hp), b: !!e.boss }))
+          enemies: this.enemies.slice(0, 32).map(e => ({ id: e.id, type: e.type, x: Math.round(e.x), y: Math.round(e.y), baseY: Math.round(e.baseY || e.y), targetY: Math.round(e.targetY || e.y), targetPlayerId: e.targetPlayerId, p: e.prompt.text, hp: Math.round(e.hp), maxHp: Math.round(e.maxHp || e.hp), size: Math.round(e.size), speed: Math.round(e.speed), b: !!e.boss, phase: e.phase || 1, maxPhase: e.maxPhase || 1, recipe: e.recipe }))
         });
       }
     }
@@ -1079,10 +1290,10 @@
       const perfect = complete && this.wrongKeys === 0 && this.baseHealth >= this.baseHealthMax;
       const coins = complete ? Math.ceil(this.score / 80 + 35 + this.levelIndex * 4) : Math.ceil(this.score / 160);
       const pearls = perfect ? 1 : 0;
-      if (!this.multiplayer || !fromServer) {
+      if (!this.multiplayer || fromServer || this.isHost) {
         this.app.awardProgress({ coins, pearls, complete, perfect, globalLevel: this.levelNumber, score: this.score });
       }
-      if (this.multiplayer && !fromServer) this.app.multiplayer.complete(result, { score: this.score, accuracy: this.accuracy(), wpm: this.wpm(), coins, pearls });
+      if (this.multiplayer && !fromServer && this.isHost) this.app.multiplayer.complete(result, { score: this.score, accuracy: this.accuracy(), wpm: this.wpm(), coins, pearls });
       this.audio.beep(complete ? 'complete' : 'over');
       this.app.showResult({ result, score: this.score, combo: this.combo, accuracy: this.accuracy(), wpm: this.wpm(), coins, pearls, perfect, multiplayer: this.multiplayer });
     }
@@ -1095,11 +1306,12 @@
       $('hudAccuracy').textContent = `${Math.round(this.accuracy())}%`;
       $('hudWpm').textContent = String(this.wpm());
       $('hudLevel').textContent = `${this.worldIndex + 1}-${this.levelIndex + 1}`;
-      $('hudHealth').textContent = String(Math.max(0, Math.round(this.baseHealth)));
+      const local = this.getLocalPlayer();
+      $('hudHealth').textContent = this.multiplayer ? `${Math.max(0, Math.round(local?.lives ?? 100))}` : String(Math.max(0, Math.round(this.baseHealth)));
       $('hudWave').textContent = `${this.wave}/${this.wavesTotal}`;
       $('hudTimer').textContent = formatTime(this.timer);
       const target = this.getTarget();
-      $('hudTarget').textContent = target ? target.prompt.text : 'None';
+      $('hudTarget').textContent = local?.status === 'down' ? 'DOWN - spectating' : (target ? target.prompt.text : 'None');
       this.renderLeaderboard();
       this.updatePowerButtons();
     }
@@ -1112,13 +1324,18 @@
       });
     }
     renderLeaderboard() {
-      const you = { id: this.app.multiplayer.playerId || 'local', name: 'You', isAI: false, score: this.score, combo: this.combo, accuracy: this.accuracy(), lives: this.baseHealthPercent(), status: this.paused ? 'paused' : 'playing' };
-      const others = this.players.filter(p => p.id !== you.id && p.id !== 'local');
-      const list = [you, ...others].sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, MAX_ROOM_PLAYERS);
+      const local = this.getLocalPlayer() || { id: 'local', name: 'You' };
+      local.score = this.score;
+      local.combo = this.combo;
+      local.accuracy = this.accuracy();
+      if (!this.multiplayer) local.lives = this.baseHealthPercent();
+      if (local.status !== 'down') local.status = this.paused ? 'paused' : 'playing';
+      const list = this.players.slice(0, MAX_ROOM_PLAYERS).sort((a, b) => (b.score || 0) - (a.score || 0));
       $('leaderboard').innerHTML = list.map((p, i) => {
         const disconnected = p.connected === false || p.status === 'ai-replaced';
-        const tag = disconnected ? 'Disconnected → AI' : p.isAI ? 'AI typing' : (p.status || 'connected');
-        return `<div class="leader-row ${disconnected ? 'disconnected-row' : ''}"><span>${i + 1}. ${p.isAI ? 'AI ' : ''}${p.name || 'Player'}<br><small>${tag} • ${Math.round(p.accuracy ?? 100)}% • x${p.combo || 1}</small></span><b>${Math.floor(p.score || 0)}</b></div>`;
+        const down = p.status === 'down' || (p.lives ?? 100) <= 0;
+        const tag = down ? 'Down until next round' : disconnected ? 'Disconnected → AI' : p.isAI ? 'AI typing' : (p.status || 'connected');
+        return `<div class="leader-row ${disconnected ? 'disconnected-row' : ''} ${down ? 'down-row' : ''}"><span>${i + 1}. ${p.id === this.localPlayerId ? 'You' : (p.name || 'Player')}<br><small>${tag} • ${Math.round(p.accuracy ?? 100)}% • HP ${Math.round(p.lives ?? 100)} • x${p.combo || 1}</small></span><b>${Math.floor(p.score || 0)}</b></div>`;
       }).join('');
     }
     loop(ts) {
@@ -1145,13 +1362,13 @@
     keyboardHeight() {
       const kb = $('mobileKeyboard');
       const visible = !!(kb && kb.classList.contains('visible'));
-      return visible ? Math.max(kb.offsetHeight || 0, Math.min(this.h * 0.28, 220)) : 0;
+      return visible ? Math.max(kb.offsetHeight || 0, Math.min(this.h * (this.w > this.h ? 0.30 : 0.25), this.w > this.h ? 172 : 214)) : 0;
     }
     playArea() {
       const kb = this.keyboardHeight();
       const compact = this.w < 700 || this.h > this.w;
       const top = compact ? Math.max(96, this.h * 0.14) : Math.max(78, this.h * 0.12);
-      const bottomPad = kb ? kb + (compact ? 108 : 72) : Math.max(90, this.h * 0.12);
+      const bottomPad = kb ? kb + (compact ? 76 : 46) : Math.max(90, this.h * 0.12);
       const bottom = Math.max(top + 120, this.h - bottomPad);
       return { top, bottom: Math.min(this.h - 72, bottom), keyboard: kb };
     }
@@ -1212,46 +1429,63 @@
       ctx.restore();
     }
     drawPlayerDivers(ctx) {
-      const players = (this.players && this.players.length ? this.players : []).slice(0, MAX_ROOM_PLAYERS);
+      const players = this.activeCrew();
       if (!players.length) return;
-      const base = this.basePoint();
-      const area = this.playArea();
-      const radius = Math.min(42, Math.max(28, (area.bottom - area.top) / 7));
-      const startY = base.y - Math.min(72, players.length * 11);
       players.forEach((p, i) => {
-        const col = i % 2;
-        const row = Math.floor(i / 2);
-        const x = base.x + 70 + col * 42;
-        const y = clamp(startY + row * radius, area.top + 18, area.bottom - 18);
-        this.drawMiniDiver(ctx, x, y, 17, p, i);
+        const pt = this.playerPoint(p.id, i);
+        this.drawMiniDiver(ctx, pt.x, pt.y, this.multiplayer ? 22 : 25, p, i);
       });
     }
     drawMiniDiver(ctx, x, y, s, p, i) {
       const disconnected = p.connected === false || p.status === 'ai-replaced';
+      const down = p.status === 'down' || (p.lives ?? 100) <= 0;
       const ai = !!p.isAI;
+      const isYou = p.id === this.localPlayerId;
       const palettes = ['#ffe066', '#46f4a8', '#41f4ff', '#ff79d7', '#ff9f43', '#b8ff6a', '#9b5cff'];
-      const suit = disconnected ? '#8fa7b8' : palettes[i % palettes.length];
+      const suit = down ? '#6f7d91' : disconnected ? '#8fa7b8' : palettes[i % palettes.length];
+      const t = this.timer || 0;
       ctx.save();
-      ctx.translate(x, y + Math.sin((this.timer || 0) * 2 + i) * 2);
-      ctx.globalAlpha = disconnected ? 0.72 : 1;
-      ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.beginPath(); ctx.ellipse(0, s * 0.78, s * 0.9, s * 0.24, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.62)'; ctx.lineWidth = Math.max(1.5, s * 0.11);
-      ctx.fillStyle = suit; roundRect(ctx, -s * 0.48, -s * 0.32, s * 0.96, s * 0.92, s * 0.24); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#08213e'; roundRect(ctx, -s * 0.36, -s * 0.18, s * 0.72, s * 0.3, s * 0.14); ctx.fill();
-      ctx.fillStyle = ai ? '#46f4a8' : '#7bd7ff'; ctx.beginPath(); ctx.arc(-s * 0.16, -s * 0.03, s * 0.09, 0, Math.PI * 2); ctx.arc(s * 0.16, -s * 0.03, s * 0.09, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = suit; ctx.lineWidth = s * 0.12; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(-s * 0.48, s * 0.06); ctx.lineTo(-s * 0.82, s * 0.28); ctx.moveTo(s * 0.48, s * 0.06); ctx.lineTo(s * 0.82, s * 0.28); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(-s * 0.22, s * 0.58); ctx.lineTo(-s * 0.44, s * 0.94); ctx.moveTo(s * 0.22, s * 0.58); ctx.lineTo(s * 0.44, s * 0.94); ctx.stroke();
-      if (disconnected) {
-        ctx.fillStyle = '#ff5b7f'; ctx.beginPath(); ctx.arc(s * 0.48, -s * 0.48, s * 0.17, 0, Math.PI * 2); ctx.fill();
+      ctx.translate(x, y + Math.sin(t * 2 + i) * 2);
+      ctx.globalAlpha = down ? 0.48 : disconnected ? 0.74 : 1;
+      ctx.fillStyle = 'rgba(0,0,0,0.26)'; ctx.beginPath(); ctx.ellipse(0, s * 1.03, s * 1.25, s * 0.28, 0, 0, Math.PI * 2); ctx.fill();
+      if (isYou) { ctx.strokeStyle = '#ffe066'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, s * 1.35, 0, Math.PI * 2); ctx.stroke(); }
+      // air tank and hose
+      ctx.strokeStyle = 'rgba(255,255,255,0.56)'; ctx.lineWidth = Math.max(1.4, s * 0.08); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(s * 0.44, -s * 0.12); ctx.quadraticCurveTo(s * 0.92, -s * 0.34, s * 0.74, -s * 0.72); ctx.stroke();
+      ctx.fillStyle = '#22375f'; roundRect(ctx, s * 0.44, -s * 0.46, s * 0.34, s * 0.92, s * 0.14); ctx.fill();
+      ctx.fillStyle = '#91a8c8'; roundRect(ctx, s * 0.49, -s * 0.37, s * 0.22, s * 0.72, s * 0.10); ctx.fill();
+      // body suit
+      ctx.strokeStyle = '#08213e'; ctx.lineWidth = Math.max(2, s * 0.12);
+      ctx.fillStyle = suit; roundRect(ctx, -s * 0.52, -s * 0.42, s * 1.04, s * 1.06, s * 0.28); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.28)'; roundRect(ctx, -s * 0.16, -s * 0.32, s * 0.18, s * 0.82, s * 0.08); ctx.fill();
+      // mask
+      ctx.fillStyle = '#061d3d'; roundRect(ctx, -s * 0.47, -s * 0.26, s * 0.82, s * 0.38, s * 0.17); ctx.fill();
+      ctx.fillStyle = ai ? '#46f4a8' : '#7bd7ff'; ctx.beginPath(); ctx.arc(-s * 0.21, -s * 0.07, s * 0.11, 0, Math.PI * 2); ctx.arc(s * 0.12, -s * 0.07, s * 0.11, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.62)'; ctx.beginPath(); ctx.arc(-s * 0.24, -s * 0.11, s * 0.035, 0, Math.PI * 2); ctx.arc(s * 0.09, -s * 0.11, s * 0.035, 0, Math.PI * 2); ctx.fill();
+      // arms
+      ctx.strokeStyle = suit; ctx.lineWidth = s * 0.16; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-s * 0.48, s * 0.02); ctx.quadraticCurveTo(-s * 0.9, s * 0.22, -s * 0.74, s * 0.52); ctx.moveTo(s * 0.47, s * 0.02); ctx.quadraticCurveTo(s * 0.86, s * 0.18, s * 0.7, s * 0.48); ctx.stroke();
+      // legs and flippers
+      ctx.beginPath(); ctx.moveTo(-s * 0.24, s * 0.55); ctx.lineTo(-s * 0.45, s * 0.96); ctx.moveTo(s * 0.22, s * 0.55); ctx.lineTo(s * 0.46, s * 0.96); ctx.stroke();
+      ctx.fillStyle = '#08213e'; ctx.beginPath(); ctx.ellipse(-s * 0.55, s * 1.06, s * 0.38, s * 0.12, -0.15, 0, Math.PI * 2); ctx.ellipse(s * 0.58, s * 1.06, s * 0.38, s * 0.12, 0.15, 0, Math.PI * 2); ctx.fill();
+      // bubbles/status
+      ctx.fillStyle = down ? '#ff5b7f' : disconnected ? '#ff9f43' : '#dffbff';
+      for (let b = 0; b < 3; b++) { ctx.globalAlpha = (down ? .55 : .8) - b * .16; ctx.beginPath(); ctx.arc(s * (0.88 + b * .22), -s * (0.58 + b * .28) - Math.sin(t * 2 + b + i) * 2, s * (0.08 - b * .01), 0, Math.PI * 2); ctx.fill(); }
+      ctx.globalAlpha = down ? 0.48 : disconnected ? 0.74 : 1;
+      if (disconnected || down) {
+        ctx.fillStyle = down ? '#ff5b7f' : '#ff9f43'; ctx.beginPath(); ctx.arc(s * 0.56, -s * 0.56, s * 0.18, 0, Math.PI * 2); ctx.fill();
       }
-      ctx.fillStyle = 'rgba(5,24,56,.78)'; roundRect(ctx, -s * 1.15, s * 1.04, s * 2.3, s * 0.54, s * 0.18); ctx.fill();
-      ctx.fillStyle = '#ffffff'; ctx.font = `800 ${Math.max(8, s * 0.42)}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(p.name || (ai ? 'AI' : 'Player')).slice(0, 8), 0, s * 1.31);
+      ctx.fillStyle = 'rgba(5,24,56,.78)'; roundRect(ctx, -s * 1.28, s * 1.20, s * 2.56, s * 0.56, s * 0.18); ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.font = `900 ${Math.max(8, s * 0.36)}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(`${isYou ? 'You' : String(p.name || (ai ? 'AI' : 'Player')).slice(0, 7)}${down ? ' ✕' : ''}`, 0, s * 1.48);
       ctx.restore();
     }
     drawEnemy(ctx, e) {
       const t = this.timer || now() / 1000;
       const isTarget = e.id === this.activeId;
+      if (this.multiplayer && e.targetPlayerId) {
+        const pt = this.playerPoint(e.targetPlayerId);
+        ctx.save(); ctx.globalAlpha = 0.13; ctx.strokeStyle = '#ffe066'; ctx.setLineDash([4, 7]); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(e.x, e.y); ctx.lineTo(pt.x, pt.y); ctx.stroke(); ctx.restore();
+      }
       this.spriteFactory.draw(ctx, e.recipe, e.x + Math.sin(t * 10) * e.shake * 8, e.y, e.size, t, e.hit);
       if (isTarget) {
         ctx.strokeStyle = '#ffe066'; ctx.lineWidth = 3; ctx.globalAlpha = 0.85;
@@ -1582,7 +1816,7 @@
         this.showScreen('lobbyScreen');
       } else {
         const room = payload.room;
-        this.startGame({ mode: room.mode, worldIndex: room.worldIndex, levelIndex: room.levelIndex, multiplayer: true, room, seed: Date.now() % 1000000000 });
+        this.startGame({ mode: room.mode, worldIndex: room.worldIndex, levelIndex: room.levelIndex, multiplayer: true, room, seed: payload.seed || room.seed || Date.now() % 1000000000 });
       }
     }
     renderRoomList(rooms = []) {
