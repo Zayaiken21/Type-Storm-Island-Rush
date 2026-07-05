@@ -47,10 +47,10 @@
     { name: 'Jungle Lagoon', mood: 'warm drums and birds', boss: 'Vinefin Titan', colors: ['#0f7b52', '#20d080', '#f6d365'], enemies: ['piranha', 'vine eel', 'toxic slime', 'jungle ray', 'bubble bat', 'frogfish', 'leaf turtle', 'moss crab', 'orchid squid', 'lagoon nautilus'], effect: 'leaf bursts', prompt: 'animal island words' },
     { name: 'Iceberg Ocean', mood: 'soft bells and arctic wind', boss: 'Frost Whale King', colors: ['#8bd7ff', '#4c8fea', '#e9fbff'], enemies: ['ice whale', 'frost crab', 'snow jelly', 'polar eel', 'ghost ray', 'crystal narwhal', 'snow puffer', 'ice clam', 'aurora manta', 'glacier turtle'], effect: 'snow shimmer', prompt: 'accuracy drills' },
     { name: 'Volcano Tide', mood: 'deep drums and lava pops', boss: 'Magma Shell', colors: ['#fc5c40', '#7b1d36', '#ffcf4a'], enemies: ['lava turtle', 'magma eel', 'ash shark', 'ember crab', 'toxic slime', 'cinder ray', 'fire puffer', 'obsidian clam', 'smoke squid', 'lava nautilus'], effect: 'embers', prompt: 'number drills' },
-    { name: 'Neon Cyber Sea', mood: 'retro synth wave', boss: 'Neon Megabyte', colors: ['#41f4ff', '#9b5cff', '#16ff8f'], enemies: ['robotic fish', 'sea drone', 'mechanical octopus', 'laser jelly', 'byte shark', 'cyber puffer', 'pixel ray', 'data clam', 'circuit seahorse', 'servo crab'], effect: 'neon trails', prompt: 'tech symbols' },
+    { name: 'Neon Cyber Sea', mood: 'retro synth wave', boss: 'Neon Megabyte', colors: ['#41f4ff', '#9b5cff', '#16ff8f'], enemies: ['robotic fish', 'sea drone', 'mechanical octopus', 'laser jelly', 'byte shark', 'cyber puffer', 'pixel ray', 'data clam', 'circuit seahorse', 'servo crab'], effect: 'neon trails', prompt: 'tech words' },
     { name: 'Ancient Atlantis', mood: 'mystic choir pads', boss: 'Atlantean Hydra', colors: ['#2fd5b4', '#2857b8', '#ffd166'], enemies: ['ancient ray', 'stone crab', 'hydra minion', 'coral beast', 'treasure mimic', 'rune turtle', 'temple clam', 'obelisk eel', 'gold nautilus', 'guardian puffer'], effect: 'rune circles', prompt: 'advanced phrases' },
     { name: 'Stormbreaker Isles', mood: 'storm drums and thunder', boss: 'Storm Serpent', colors: ['#2d3e8f', '#12c6f3', '#f4f7ff'], enemies: ['storm serpent', 'electric eel', 'cloud jelly', 'sea drone', 'shark', 'thunder puffer', 'rain ray', 'bolt crab', 'wind squid', 'cloud clam'], effect: 'lightning arcs', prompt: 'speed drills' },
-    { name: 'Moonlit Abyss', mood: 'dreamy deep sea bells', boss: 'Abyss Phantom', colors: ['#15103d', '#5535a5', '#8ef5ff'], enemies: ['ghost ray', 'abyss jelly', 'shadow eel', 'bubble bat', 'phantom shark', 'moon puffer', 'dream clam', 'night squid', 'lunar nautilus', 'glow seahorse'], effect: 'moon glow', prompt: 'mixed case phrases' },
+    { name: 'Moonlit Abyss', mood: 'dreamy deep sea bells', boss: 'Abyss Phantom', colors: ['#15103d', '#5535a5', '#8ef5ff'], enemies: ['ghost ray', 'abyss jelly', 'shadow eel', 'bubble bat', 'phantom shark', 'moon puffer', 'dream clam', 'night squid', 'lunar nautilus', 'glow seahorse'], effect: 'moon glow', prompt: 'advanced ocean words' },
     { name: 'Alien Star Ocean', mood: 'cosmic plucks and pulses', boss: 'Star Kraken', colors: ['#481f9d', '#00e0ff', '#ff79d7'], enemies: ['alien squid', 'star drone', 'cosmic crab', 'void whale', 'mechanical octopus', 'orbit puffer', 'comet ray', 'ufo clam', 'plasma eel', 'starlight nautilus'], effect: 'star portals', prompt: 'boss challenge phrases' }
   ];
 
@@ -75,7 +75,7 @@
     const classes = 'scout guardian charger trickster bomber drifter glider bruiser phantom racer biter spinner lurker knight captain wizard rover striker crawler diver snapper whisper sentinel'.split(' ');
     const out = [];
     const seen = new Set();
-    for (let i = 0; out.length < 1200; i++) {
+    for (let i = 0; out.length < 1800; i++) {
       const name = `${modifiers[i % modifiers.length]} ${creatures[(i * 7) % creatures.length]} ${classes[(i * 13) % classes.length]}`;
       if (!seen.has(name)) { seen.add(name); out.push(name); }
     }
@@ -272,10 +272,19 @@
       this.bossPrompts = [];
       this.build();
     }
+    cleanText(text) {
+      // The mobile keyboard only has lowercase letters, numbers, and space.
+      // Keep every prompt compatible with the built-in keyboard.
+      return String(text)
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
     add(text, category, difficulty = 1, kids = true) {
-      const clean = String(text).replace(/\s+/g, ' ').trim();
-      if (!clean || this.seen.has(clean.toLowerCase())) return;
-      this.seen.add(clean.toLowerCase());
+      const clean = this.cleanText(text);
+      if (!clean || this.seen.has(clean)) return;
+      this.seen.add(clean);
       const prompt = { text: clean, category, difficulty, kids: !!kids, length: clean.length };
       this.prompts.push(prompt);
       if (kids) this.kidsPrompts.push(prompt);
@@ -332,12 +341,11 @@
         this.add(`wave-${i} reef-${(i * 3) % 77}`, 'number drill', 4, true);
         this.add(`${i % 10}${(i + 3) % 10}${(i + 6) % 10}-${(i * 11) % 100}`, 'number drill', 5, true);
       }
-      const symbols = ['@', '#', '$', '%', '&', '*', '+', '=', '?', '!', '~'];
       for (let i = 0; i < 360; i++) {
         const w1 = tech[i % tech.length];
         const w2 = ocean[(i * 5) % ocean.length];
-        this.add(`${w1}${symbols[i % symbols.length]}${w2}`, 'symbol drill', 5, i % 5 !== 0);
-        this.add(`${symbols[(i + 2) % symbols.length]} ${w1} ${i % 100}`, 'symbol drill', 6, i % 7 !== 0);
+        this.add(`${w1} ${w2} ${i % 100}`, 'speed drill', 5, i % 5 !== 0);
+        this.add(`${w1} ${i % 100} ${w2}`, 'number word drill', 6, i % 7 !== 0);
       }
       for (let i = 0; i < 260; i++) {
         const n = nouns[(i * 11) % nouns.length];
@@ -352,13 +360,13 @@
       }
       WORLDS.forEach((w, wi) => {
         for (let stage = 1; stage <= 6; stage++) {
-          const line = `${w.boss} phase ${stage}: protect the ${['reef', 'crew', 'beacon', 'island', 'portal', 'base'][stage - 1]} with perfect rhythm ${wi + stage}`;
+          const line = this.cleanText(`${w.boss} phase ${stage} protect the ${['reef', 'crew', 'beacon', 'island', 'portal', 'base'][stage - 1]} with perfect rhythm ${wi + stage}`);
           this.bossPrompts.push({ text: line, category: 'boss challenge phrase', difficulty: 8 + wi, kids: true, length: line.length, world: wi });
           this.add(line, 'boss challenge phrase', 8 + wi, true);
         }
       });
       let fill = 0;
-      while (this.prompts.length < 2300) {
+      while (this.prompts.length < 3200) {
         const text = `${choice(adjectives)} ${choice(nouns)} ${choice(verbs)} ${choice(nouns)} ${fill}`;
         this.add(text, 'generated challenge', 4 + (fill % 6), fill % 8 !== 0);
         fill++;
@@ -382,14 +390,14 @@
 
   class SpriteFactory {
     constructor() {
-      this.bodyShapes = ['oval', 'long', 'triangle', 'round', 'whale', 'crab', 'jelly', 'eel', 'turtle', 'squid', 'drone', 'mimic', 'puffer', 'ray', 'angler', 'clam', 'seahorse', 'slug', 'nautilus'];
-      this.eyeStyles = ['dot', 'wide', 'sleepy', 'angry', 'robot', 'glow', 'star'];
-      this.finStyles = ['small', 'sail', 'spike', 'leaf', 'armor', 'wing', 'none'];
-      this.tailStyles = ['fork', 'fan', 'bolt', 'ribbon', 'bubble', 'propeller', 'tentacles'];
-      this.patterns = ['none', 'stripes', 'dots', 'zigzag', 'runes', 'plates', 'stars', 'scales'];
-      this.glows = ['none', 'soft', 'strong', 'pulse'];
-      this.armor = ['none', 'shell', 'metal', 'coral', 'ice', 'lava'];
-      this.accessories = ['none', 'hat', 'crown', 'antenna', 'patch', 'gem', 'flag', 'visor'];
+      this.bodyShapes = ['oval', 'long', 'triangle', 'round', 'whale', 'crab', 'jelly', 'eel', 'turtle', 'squid', 'drone', 'mimic', 'puffer', 'ray', 'angler', 'clam', 'seahorse', 'slug', 'nautilus', 'lobster', 'urchin', 'starfish', 'barracuda', 'shell'];
+      this.eyeStyles = ['dot', 'wide', 'sleepy', 'angry', 'robot', 'glow', 'star', 'cyclops', 'gem'];
+      this.finStyles = ['small', 'sail', 'spike', 'leaf', 'armor', 'wing', 'none', 'double', 'ribbon'];
+      this.tailStyles = ['fork', 'fan', 'bolt', 'ribbon', 'bubble', 'propeller', 'tentacles', 'crescent', 'comet'];
+      this.patterns = ['none', 'stripes', 'dots', 'zigzag', 'runes', 'plates', 'stars', 'scales', 'diamonds', 'rings'];
+      this.glows = ['none', 'soft', 'strong', 'pulse', 'halo'];
+      this.armor = ['none', 'shell', 'metal', 'coral', 'ice', 'lava', 'crystal'];
+      this.accessories = ['none', 'hat', 'crown', 'antenna', 'patch', 'gem', 'flag', 'visor', 'helmet', 'lantern'];
     }
     variationCount() {
       return this.bodyShapes.length * this.eyeStyles.length * this.finStyles.length * this.tailStyles.length * this.patterns.length * this.glows.length * this.armor.length * this.accessories.length * WORLDS.length;
@@ -410,6 +418,10 @@
       if (type.includes('ray') || type.includes('manta')) bodyShape = 'ray';
       if (type.includes('angler')) bodyShape = 'angler';
       if (type.includes('clam') || type.includes('shell')) bodyShape = 'clam';
+      if (type.includes('lobster')) bodyShape = 'lobster';
+      if (type.includes('urchin')) bodyShape = 'urchin';
+      if (type.includes('starfish')) bodyShape = 'starfish';
+      if (type.includes('barracuda')) bodyShape = 'barracuda';
       if (type.includes('seahorse')) bodyShape = 'seahorse';
       if (type.includes('slug') || type.includes('slime')) bodyShape = 'slug';
       if (type.includes('nautilus')) bodyShape = 'nautilus';
@@ -761,11 +773,14 @@
       this.accuracyShield = 0;
       this.bossSpawned = false;
       this.bossDefeated = false;
+      this.bossCutsceneTimer = 0;
+      this.shellRushTimer = 0;
       this.resultShown = false;
       this.lastHud = 0;
       this.lastStatsSend = 0;
       this.lastSnapshotSend = 0;
       this.powerCooldowns = Object.fromEntries(POWERUPS.map(p => [p.id, 0]));
+      this.bubbleShieldTimer = 0;
       this.players = this.makePlayers(options.room);
       this.reviveCrew();
       this.localPlayerId = this.app.multiplayer.playerId || 'local';
@@ -804,6 +819,7 @@
     }
     receiveSnapshot(snap) {
       if (!this.multiplayer || this.isHost || !snap) return;
+      if (snap.seed != null && Number(snap.seed) !== Number(this.seed)) return;
       if (Number.isFinite(snap.wave)) this.wave = snap.wave;
       if (Number.isFinite(snap.timer)) this.timer = Math.max(this.timer, snap.timer);
       const incoming = Array.isArray(snap.enemies) ? snap.enemies : [];
@@ -861,6 +877,7 @@
     }
     applyGameEvent(evt) {
       if (!evt || !evt.type) return;
+      if (evt.seed != null && Number(evt.seed) !== Number(this.seed)) return;
       const key = `${evt.type}:${evt.enemyId || evt.playerId || ''}:${evt.by || ''}:${evt.t || ''}`;
       if (this.recentEvents.has(key)) return;
       this.recentEvents.add(key);
@@ -870,6 +887,13 @@
         if (evt.type === 'enemy-kill') {
           const e = this.enemies.find(x => x.id === evt.enemyId);
           if (e) this.removeEnemy(e, false);
+        }
+        if (evt.type === 'enemy-progress') {
+          const e = this.enemies.find(x => x.id === evt.enemyId);
+          if (e && e.id !== this.activeId) {
+            e.progress = clamp(Number(evt.progress || 0), 0, e.prompt.text.length);
+            e.hit = Math.max(e.hit || 0, 0.07);
+          }
         }
         if (evt.type === 'boss-damage') {
           const e = this.enemies.find(x => x.id === evt.enemyId);
@@ -918,9 +942,20 @@
     applyPlayerHit(playerId, damage, enemyId, broadcast = true) {
       const player = this.players.find(p => p.id === playerId) || this.getLocalPlayer();
       if (!player) return;
+      const shieldActive = (player.shieldTimer || 0) > 0 || (player.shieldUntil && player.shieldUntil > Date.now()) || (player.id === this.localPlayerId && this.bubbleShieldTimer > 0);
+      const pt = this.playerPoint(player.id);
+      if (shieldActive || damage <= 0) {
+        player.status = 'shielded';
+        this.spawnParticles(pt.x, pt.y, '#46f4a8', 18);
+        if (enemyId) {
+          const e = this.enemies.find(x => x.id === enemyId);
+          if (e) this.removeEnemy(e, false);
+        }
+        if (broadcast) this.sendGameEvent({ type: 'player-hit', playerId: player.id, damage: 0, enemyId });
+        return;
+      }
       player.lives = clamp((player.lives ?? 100) - damage, 0, 100);
       player.status = player.lives <= 0 ? 'down' : 'hit';
-      const pt = this.playerPoint(player.id);
       this.spawnParticles(pt.x, pt.y, player.lives <= 0 ? '#ff5b7f' : '#ffe066', player.lives <= 0 ? 22 : 10);
       if (enemyId) {
         const e = this.enemies.find(x => x.id === enemyId);
@@ -974,8 +1009,11 @@
       if (id === 'double') this.doubleTimer = 10;
       if (id === 'shield') {
         const local = this.getLocalPlayer();
-        if (this.multiplayer && local) local.lives = clamp((local.lives ?? 100) + 22, 0, 100);
-        else this.baseHealth = clamp(this.baseHealth + 22, 0, this.baseHealthMax + 60);
+        this.bubbleShieldTimer = 3;
+        if (local) local.shieldTimer = 3;
+        if (this.multiplayer && local) local.status = 'shielded';
+        else this.baseHealth = clamp(this.baseHealth + 12, 0, this.baseHealthMax + 60);
+        this.spawnParticles(this.basePoint().x + 45, this.basePoint().y, '#46f4a8', 18);
       }
       if (id === 'repair') {
         const local = this.getLocalPlayer();
@@ -1020,7 +1058,10 @@
         const d = Math.hypot(enemy.x - x, enemy.y - y);
         if (d < enemy.size * 1.6 && d < bestD) { best = enemy; bestD = d; }
       }
-      if (best) this.setTarget(best.id, true);
+      if (best) {
+        if (this.typedBuffer && this.activeId && this.activeId !== best.id) this.app.toast('Finish the active word first.');
+        else this.setTarget(best.id, true);
+      }
       this.app.focusTyping();
     }
     setTarget(id, clear = true) {
@@ -1037,6 +1078,18 @@
       }
       return target;
     }
+    findTargetForKey(key) {
+      if (!key || key.length !== 1) return this.getTarget();
+      const lower = key.toLowerCase();
+      const matches = this.enemies
+        .filter(e => e.prompt?.text?.startsWith(lower))
+        .sort((a, b) => a.x - b.x);
+      if (matches.length) {
+        this.setTarget(matches[0].id, true);
+        return matches[0];
+      }
+      return this.getTarget();
+    }
     handleKey(key) {
       if (!this.running || this.resultShown) return;
       if (key === 'Escape') return this.pause();
@@ -1044,7 +1097,10 @@
       if (key === 'Backspace') {
         this.typedBuffer = this.typedBuffer.slice(0, -1);
         const target = this.getTarget();
-        if (target) target.progress = this.typedBuffer.length;
+        if (target) {
+          target.progress = this.typedBuffer.length;
+          this.sendGameEvent({ type: 'enemy-progress', enemyId: target.id, progress: target.progress });
+        }
         this.audio.beep('click');
         this.updateHud(true);
         return;
@@ -1055,7 +1111,8 @@
         return;
       }
       if (key.length !== 1) return;
-      const target = this.getTarget();
+      key = key.toLowerCase();
+      const target = this.typedBuffer ? this.getTarget() : this.findTargetForKey(key);
       if (!target) return;
       this.totalKeys++;
       const candidate = this.typedBuffer + key;
@@ -1063,6 +1120,7 @@
         this.typedBuffer = candidate;
         target.progress = candidate.length;
         target.hit = 0.12;
+        this.sendGameEvent({ type: 'enemy-progress', enemyId: target.id, progress: target.progress });
         this.correctKeys++;
         this.score += Math.ceil(2 * this.combo * (this.doubleTimer > 0 ? 2 : 1));
         this.audio.beep('correct');
@@ -1092,6 +1150,8 @@
         if (target.hp <= 0 || target.phase > target.maxPhase) {
           this.removeEnemy(target, true);
           this.bossDefeated = true;
+          this.bossCutsceneTimer = 3.4;
+          this.cutsceneNextWorldName = WORLDS[Math.min(WORLDS.length - 1, this.worldIndex + 1)]?.name || 'the next ocean';
           this.sendGameEvent({ type: 'enemy-kill', enemyId: target.id });
         } else {
           target.prompt = this.promptManager.getPrompt({ difficulty: 9 + this.worldIndex, worldIndex: this.worldIndex, boss: true, seed: this.seed + target.phase * 101 });
@@ -1101,6 +1161,11 @@
           this.sendGameEvent({ type: 'boss-damage', enemyId: target.id, hp: target.hp, phase: target.phase, prompt: target.prompt.text });
         }
       } else {
+        if (target.gemShell) {
+          this.score += 180 + this.levelIndex * 25;
+          this.spawnParticles(target.x, target.y, '#ffe066', 28);
+          this.app.toast('Gem shell opened!');
+        }
         this.removeEnemy(target, true);
         this.sendGameEvent({ type: 'enemy-kill', enemyId: target.id });
       }
@@ -1124,13 +1189,16 @@
     spawnEnemy(minion = false) {
       if (this.enemies.length >= this.maxEnemies) return;
       const world = WORLDS[this.worldIndex];
-      const type = choice(world.enemies, this.rand);
+      const shellLevel = !minion && !this.isBossLevel && (this.levelIndex % 5 === 2 || this.mode === 'Practice Mode') && this.rand() < 0.20;
+      const type = shellLevel ? choice(['gem shell', 'pearl clam', 'treasure shell', 'opal oyster'], this.rand) : choice(world.enemies, this.rand);
       const id = ++this.enemyId;
-      const size = minion ? 24 + this.rand() * 8 : 28 + this.rand() * 20;
+      const size = shellLevel ? 42 + this.rand() * 14 : (minion ? 24 + this.rand() * 8 : 28 + this.rand() * 20);
       const area = this.playArea();
       const yMin = Math.max(area.top + size * 0.5, this.h * 0.14);
       const yMax = Math.max(yMin + 34, area.bottom - size * 0.7);
-      const prompt = this.promptManager.getPrompt({ difficulty: this.difficulty + (minion ? -1 : 0), worldIndex: this.worldIndex, kids: this.kids, seed: this.seed + id * 23 });
+      const prompt = shellLevel
+        ? this.promptManager.getPrompt({ difficulty: Math.min(6, this.difficulty + 1), worldIndex: this.worldIndex, kids: true, seed: this.seed + id * 23 })
+        : this.promptManager.getPrompt({ difficulty: this.difficulty + (minion ? -1 : 0), worldIndex: this.worldIndex, kids: this.kids, seed: this.seed + id * 23 });
       const targetPlayer = this.pickTargetPlayer();
       const targetPoint = this.playerPoint(targetPlayer?.id);
       this.enemies.push({
@@ -1144,15 +1212,16 @@
         targetPlayerId: targetPlayer?.id || null,
         targetY: targetPoint.y,
         size,
-        speed: (22 + this.difficulty * 5 + this.rand() * 24) * (this.mode.includes('Ranked') ? 1.12 : 1),
-        hp: prompt.text.length,
-        maxHp: prompt.text.length,
+        speed: (shellLevel ? 18 : 22 + this.difficulty * 5 + this.rand() * 24) * (this.mode.includes('Ranked') ? 1.12 : 1),
+        hp: shellLevel ? Math.max(4, Math.ceil(prompt.text.length * 0.8)) : prompt.text.length,
+        maxHp: shellLevel ? Math.max(4, Math.ceil(prompt.text.length * 0.8)) : prompt.text.length,
         progress: 0,
         value: 20 + Math.floor(this.difficulty * 7),
         wave: this.wave,
         hit: 0,
         shake: 0,
         boss: false,
+        gemShell: shellLevel,
         phase: 1
       });
     }
@@ -1217,6 +1286,8 @@
       this.slowTimer = Math.max(0, this.slowTimer - dt);
       this.doubleTimer = Math.max(0, this.doubleTimer - dt);
       this.accuracyShield = Math.max(0, this.accuracyShield - dt);
+      this.bubbleShieldTimer = Math.max(0, (this.bubbleShieldTimer || 0) - dt);
+      this.players.forEach(p => { if (p.shieldTimer) p.shieldTimer = Math.max(0, p.shieldTimer - dt); });
       Object.keys(this.powerCooldowns).forEach(k => this.powerCooldowns[k] = Math.max(0, this.powerCooldowns[k] - dt));
       if (this.isBossLevel) {
         if (!this.bossSpawned && this.timer > 1.2) this.spawnBoss();
@@ -1253,11 +1324,17 @@
         const hitX = this.multiplayer ? targetPoint.x + 8 : 92;
         if (!e.boss && e.x < hitX) {
           if (!this.multiplayer) {
-            this.baseHealth -= clamp(8 + this.difficulty * 1.4, 8, 22);
-            this.spawnParticles(94, e.y, '#ff5b7f', 12);
-            this.removeEnemy(e, false);
-            this.combo = 1;
-            this.audio.beep('hit');
+            if (this.bubbleShieldTimer > 0) {
+              this.spawnParticles(94, e.y, '#46f4a8', 16);
+              this.removeEnemy(e, false);
+              this.audio.beep('power');
+            } else {
+              this.baseHealth -= clamp(8 + this.difficulty * 1.4, 8, 22);
+              this.spawnParticles(94, e.y, '#ff5b7f', 12);
+              this.removeEnemy(e, false);
+              this.combo = 1;
+              this.audio.beep('hit');
+            }
           } else if (this.isHost) {
             this.applyPlayerHit(e.targetPlayerId, clamp(22 + this.difficulty * 2.2, 18, 36), e.id, true);
             this.audio.beep('hit');
@@ -1265,9 +1342,15 @@
         }
         if (e.boss && e.x < hitX + 26) {
           if (!this.multiplayer) {
-            this.baseHealth -= 35;
-            e.x = this.w * 0.65;
-            e.shake = 0.5;
+            if (this.bubbleShieldTimer > 0) {
+              e.x = this.w * 0.72;
+              e.shake = 0.8;
+              this.spawnParticles(e.x, e.y, '#46f4a8', 22);
+            } else {
+              this.baseHealth -= 35;
+              e.x = this.w * 0.65;
+              e.shake = 0.5;
+            }
           } else if (this.isHost) {
             this.applyPlayerHit(e.targetPlayerId, 38, null, true);
             e.x = this.w * 0.65;
@@ -1283,12 +1366,15 @@
         if (p.life <= 0) this.particles.splice(this.particles.indexOf(p), 1);
       }
       this.updateAI(dt);
+      if (this.bossCutsceneTimer > 0) {
+        this.bossCutsceneTimer = Math.max(0, this.bossCutsceneTimer - dt);
+      }
       if (this.multiplayer) {
         if (this.isHost && this.allHumansDown()) this.finishLevel('gameover');
-        else if (this.isHost && this.isBossLevel && this.bossSpawned && !this.enemies.some(e => e.boss) && this.bossDefeated) this.finishLevel('complete');
+        else if (this.isHost && this.isBossLevel && this.bossSpawned && !this.enemies.some(e => e.boss) && this.bossDefeated && this.bossCutsceneTimer <= 0) this.finishLevel('complete');
         else if (this.isHost && !this.isBossLevel && this.wave >= this.wavesTotal && this.spawnedInWave >= this.maxPerWave && this.enemies.length === 0) this.finishLevel('complete');
       } else if (this.baseHealth <= 0) this.finishLevel('gameover');
-      else if (this.isBossLevel && this.bossSpawned && !this.enemies.some(e => e.boss) && this.bossDefeated) this.finishLevel('complete');
+      else if (this.isBossLevel && this.bossSpawned && !this.enemies.some(e => e.boss) && this.bossDefeated && this.bossCutsceneTimer <= 0) this.finishLevel('complete');
       else if (!this.isBossLevel && this.wave >= this.wavesTotal && this.spawnedInWave >= this.maxPerWave && this.enemies.length === 0) this.finishLevel('complete');
       if (now() - this.lastHud > 120) this.updateHud();
       this.sendNetwork(dt);
@@ -1325,7 +1411,7 @@
       if (t - this.lastStatsSend > 450) {
         this.lastStatsSend = t;
         const local = this.getLocalPlayer();
-        this.app.multiplayer.stats({ score: this.score, combo: this.combo, accuracy: this.accuracy(), lives: local?.lives ?? this.baseHealthPercent(), status: local?.status === 'down' ? 'down' : (this.paused ? 'paused' : 'playing') });
+        this.app.multiplayer.stats({ score: this.score, combo: this.combo, accuracy: this.accuracy(), lives: local?.lives ?? this.baseHealthPercent(), shield: !!(local?.shieldTimer > 0 || this.bubbleShieldTimer > 0), status: local?.status === 'down' ? 'down' : (local?.shieldTimer > 0 || this.bubbleShieldTimer > 0 ? 'shielded' : (this.paused ? 'paused' : 'playing')) });
       }
       if (this.isHost && t - this.lastSnapshotSend > 900) {
         this.lastSnapshotSend = t;
@@ -1359,7 +1445,7 @@
       }
       if (this.multiplayer && !fromServer && this.isHost) this.app.multiplayer.complete(result, { score: this.score, accuracy: this.accuracy(), wpm: this.wpm(), coins, pearls });
       this.audio.beep(complete ? 'complete' : 'over');
-      this.app.showResult({ result, score: this.score, combo: this.combo, accuracy: this.accuracy(), wpm: this.wpm(), coins, pearls, perfect, multiplayer: this.multiplayer });
+      this.app.showResult({ result, score: this.score, combo: this.combo, accuracy: this.accuracy(), wpm: this.wpm(), coins, pearls, perfect, multiplayer: this.multiplayer, bossWorldClear: complete && this.isBossLevel, nextWorldName: this.cutsceneNextWorldName });
     }
     updateHud(force = false) {
       const t = now();
@@ -1419,6 +1505,7 @@
       this.drawPlayerDivers(ctx);
       for (const e of this.enemies) this.drawEnemy(ctx, e);
       this.drawParticles(ctx);
+      if (this.bossCutsceneTimer > 0) this.drawBossCutscene(ctx);
       if (this.paused) {
         ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.fillRect(0, 0, this.w, this.h);
       }
@@ -1478,18 +1565,51 @@
     }
     drawBase(ctx) {
       const { x, y } = this.basePoint();
+      const t = this.timer || now() / 1000;
       ctx.save();
-      ctx.fillStyle = 'rgba(255,224,102,0.25)';
-      ctx.beginPath(); ctx.arc(x, y, 70, 0, Math.PI * 2); ctx.fill();
+      // Submarine aura and sonar shield
+      ctx.globalAlpha = 0.25;
       ctx.fillStyle = '#ffe066';
-      ctx.strokeStyle = '#08213e'; ctx.lineWidth = 4;
-      roundRect(ctx, x - 38, y - 35, 70, 70, 18); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#0f7ee8';
-      ctx.beginPath(); ctx.arc(x - 8, y - 8, 10, 0, Math.PI * 2); ctx.arc(x + 16, y - 8, 10, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#46f4a8';
-      const hpw = 90 * clamp(this.baseHealth / this.baseHealthMax, 0, 1);
-      roundRect(ctx, x - 45, y + 52, 90, 10, 6); ctx.stroke();
-      roundRect(ctx, x - 45, y + 52, hpw, 10, 6); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 12, y, 86 + Math.sin(t * 2) * 3, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.translate(x, y);
+      // tail propeller
+      ctx.fillStyle = '#0a2a58';
+      ctx.strokeStyle = '#08213e';
+      ctx.lineWidth = 4;
+      roundRect(ctx, -68, -18, 30, 36, 10); ctx.fill(); ctx.stroke();
+      ctx.save(); ctx.translate(-76, 0); ctx.rotate(t * 5);
+      ctx.fillStyle = '#9ee8ff';
+      for (let i = 0; i < 3; i++) { ctx.rotate((Math.PI * 2) / 3); ctx.beginPath(); ctx.ellipse(0, -12, 5, 17, 0, 0, Math.PI * 2); ctx.fill(); }
+      ctx.restore();
+      // main hull
+      const grad = ctx.createLinearGradient(-62, -42, 70, 42);
+      grad.addColorStop(0, '#ffe066'); grad.addColorStop(0.55, '#ffb84a'); grad.addColorStop(1, '#46f4a8');
+      ctx.fillStyle = grad;
+      ctx.strokeStyle = '#08213e'; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.ellipse(0, 0, 74, 43, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      // nose light
+      ctx.fillStyle = '#fff4a8'; ctx.beginPath(); ctx.ellipse(66, -2, 13, 21, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 0.22; ctx.fillStyle = '#fff4a8'; ctx.beginPath(); ctx.ellipse(104, -2, 48, 24, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+      // windows
+      ctx.fillStyle = '#08213e';
+      for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.arc(-12 + i * 28, -9, 10, 0, Math.PI * 2); ctx.fill(); }
+      ctx.fillStyle = '#21a4ff';
+      for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.arc(-12 + i * 28, -9, 6.5, 0, Math.PI * 2); ctx.fill(); }
+      // periscope
+      ctx.strokeStyle = '#08213e'; ctx.lineWidth = 7; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-8, -37); ctx.lineTo(-8, -62); ctx.lineTo(20, -62); ctx.stroke();
+      ctx.strokeStyle = '#9ee8ff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-8, -37); ctx.lineTo(-8, -61); ctx.lineTo(18, -61); ctx.stroke();
+      // base / local HP bar
+      const pct = this.multiplayer ? clamp((this.getLocalPlayer()?.lives ?? 100) / 100, 0, 1) : clamp(this.baseHealth / this.baseHealthMax, 0, 1);
+      ctx.fillStyle = '#0b1834'; roundRect(ctx, -66, 56, 132, 14, 8); ctx.fill();
+      ctx.fillStyle = pct > .55 ? '#46f4a8' : pct > .25 ? '#ffe066' : '#ff5b7f'; roundRect(ctx, -62, 59, 124 * pct, 8, 6); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2; roundRect(ctx, -66, 56, 132, 14, 8); ctx.stroke();
+      if (this.bubbleShieldTimer > 0 || this.getLocalPlayer()?.shieldTimer > 0) {
+        ctx.strokeStyle = '#46f4a8'; ctx.lineWidth = 4; ctx.globalAlpha = 0.75 + Math.sin(t * 10) * 0.18;
+        ctx.beginPath(); ctx.arc(4, 0, 94, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
+        ctx.fillStyle = '#dfffee'; ctx.font = '900 12px system-ui'; ctx.textAlign = 'center'; ctx.fillText('SHIELD', 6, 88);
+      }
       ctx.restore();
     }
     drawPlayerDivers(ctx) {
@@ -1549,6 +1669,41 @@
       ctx.font = `900 ${Math.max(7, s * 0.28)}px system-ui`;
       ctx.fillStyle = hp > 55 ? '#adffd8' : hp > 25 ? '#ffeeb0' : '#ffd0da';
       ctx.fillText(`${Math.round(hp)} HP`, 0, s * 1.76);
+      ctx.restore();
+    }
+    drawBossCutscene(ctx) {
+      const t = clamp(1 - this.bossCutsceneTimer / 3.4, 0, 1);
+      const base = this.basePoint();
+      ctx.save();
+      ctx.fillStyle = 'rgba(1,13,33,0.30)'; ctx.fillRect(0, 0, this.w, this.h);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffe066'; ctx.font = `1000 ${clamp(20, this.w * 0.042, 42)}px system-ui`;
+      ctx.fillText('Boss defeated!', this.w / 2, Math.max(70, this.h * 0.18));
+      ctx.fillStyle = '#ffffff'; ctx.font = `900 ${clamp(13, this.w * 0.023, 22)}px system-ui`;
+      ctx.fillText(`Next world unlocked: ${this.cutsceneNextWorldName || 'new ocean'}`, this.w / 2, Math.max(102, this.h * 0.18 + 34));
+      // divers swim into the submarine, then the submarine launches toward the next place
+      const launch = clamp((t - 0.55) / 0.45, 0, 1);
+      const subX = base.x + launch * this.w * 0.55;
+      const subY = base.y - Math.sin(launch * Math.PI) * 34;
+      ctx.save();
+      ctx.translate(subX, subY);
+      ctx.fillStyle = 'rgba(255,224,102,0.20)'; ctx.beginPath(); ctx.arc(8, 0, 82, 0, Math.PI * 2); ctx.fill();
+      const cg = ctx.createLinearGradient(-68, -36, 70, 36); cg.addColorStop(0, '#ffe066'); cg.addColorStop(.52, '#ffb84a'); cg.addColorStop(1, '#46f4a8');
+      ctx.fillStyle = cg; ctx.strokeStyle = '#08213e'; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(0, 0, 74, 42, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#08213e'; for (let i=-1;i<=1;i++){ctx.beginPath();ctx.arc(-12+i*28,-8,10,0,Math.PI*2);ctx.fill();}
+      ctx.fillStyle = '#21a4ff'; for (let i=-1;i<=1;i++){ctx.beginPath();ctx.arc(-12+i*28,-8,6,0,Math.PI*2);ctx.fill();}
+      ctx.strokeStyle = '#08213e'; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-8,-36); ctx.lineTo(-8,-60); ctx.lineTo(18,-60); ctx.stroke();
+      ctx.fillStyle = '#fff4a8'; ctx.beginPath(); ctx.ellipse(66,-2,12,20,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#0a2a58'; roundRect(ctx,-68,-18,28,36,10); ctx.fill();
+      ctx.restore();
+      const crew = this.activeCrew().slice(0, 4);
+      crew.forEach((p, i) => {
+        const start = this.playerPoint(p.id, i);
+        const arrive = clamp(t / 0.58, 0, 1);
+        const x = lerp(start.x, base.x + 26, arrive) + launch * this.w * 0.55;
+        const y = lerp(start.y, base.y - 8, arrive) - Math.sin(launch * Math.PI) * 34;
+        if (t < 0.70) this.drawMiniDiver(ctx, x, y, 16, p, i);
+      });
       ctx.restore();
     }
     drawEnemy(ctx, e) {
@@ -1856,7 +2011,9 @@
     }
     showResult(data) {
       $('resultTitle').textContent = data.result === 'complete' ? (data.perfect ? 'Perfect Level!' : 'Level Complete!') : 'Game Over';
-      $('resultSummary').textContent = data.result === 'complete' ? `You earned ${data.coins} coins${data.pearls ? ` and ${data.pearls} pearl` : ''}.` : `The base fell, but you still earned ${data.coins} coins.`;
+      $('resultSummary').textContent = data.result === 'complete'
+        ? `${data.bossWorldClear ? `Boss cleared — ${data.nextWorldName || 'the next world'} unlocked! ` : ''}You earned ${data.coins} coins${data.pearls ? ` and ${data.pearls} pearl` : ''}.`
+        : `The crew went down, but you still earned ${data.coins} coins.`;
       $('resultStats').innerHTML = [
         ['Score', Math.floor(data.score).toLocaleString()], ['Combo', `x${data.combo}`], ['Accuracy', `${Math.round(data.accuracy)}%`], ['WPM', Math.round(data.wpm)], ['Coins', `+${data.coins}`], ['Pearls', `+${data.pearls}`]
       ].map(([a, b]) => `<div class="result-stat"><b>${b}</b><br><span>${a}</span></div>`).join('');

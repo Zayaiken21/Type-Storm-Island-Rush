@@ -76,6 +76,7 @@ function publicRoom(room) {
       lives: p.lives ?? 100,
       status: p.status || 'lobby',
       connected: p.connected !== false,
+      shieldUntil: p.shieldUntil || 0,
       replacedHuman: !!p.replacedHuman
     })),
     votes: room.votes || {}
@@ -314,9 +315,10 @@ io.on('connection', socket => {
     player.combo = Math.max(1, Math.floor(Number(payload.combo || 1)));
     player.accuracy = Math.max(0, Math.min(100, Number(payload.accuracy ?? 100)));
     player.lives = Math.max(0, Math.min(100, Number(payload.lives ?? 100)));
+    if (payload.shield) player.shieldUntil = Date.now() + 3200;
     player.status = String(payload.status || 'playing').slice(0, 20);
     room.lastSeen = Date.now();
-    socket.to(room.code).emit('player:stats', { id: player.id, score: player.score, combo: player.combo, accuracy: player.accuracy, lives: player.lives, status: player.status });
+    socket.to(room.code).emit('player:stats', { id: player.id, score: player.score, combo: player.combo, accuracy: player.accuracy, lives: player.lives, status: player.status, shieldUntil: player.shieldUntil || 0 });
   });
 
   socket.on('game:snapshot', (payload = {}) => {
@@ -337,7 +339,7 @@ io.on('connection', socket => {
   socket.on('game:event', (payload = {}) => {
     const { room, player } = findRoomAndPlayer(socket);
     if (!room || !player || room.phase !== 'playing') return;
-    const allowed = new Set(['enemy-kill', 'boss-damage', 'player-hit', 'player-down']);
+    const allowed = new Set(['enemy-kill', 'enemy-progress', 'boss-damage', 'player-hit', 'player-down']);
     const type = String(payload.type || '');
     if (!allowed.has(type)) return;
     if (payload.seed != null && Number(payload.seed) !== Number(room.seed)) return;
@@ -350,7 +352,9 @@ io.on('connection', socket => {
       damage: Number(payload.damage || 0),
       hp: payload.hp != null ? Number(payload.hp) : undefined,
       phase: payload.phase != null ? Number(payload.phase) : undefined,
-      prompt: payload.prompt ? String(payload.prompt).slice(0, 120) : undefined
+      prompt: payload.prompt ? String(payload.prompt).slice(0, 120) : undefined,
+      progress: payload.progress != null ? Number(payload.progress) : undefined,
+      seed: room.seed
     };
     if (type === 'player-hit' || type === 'player-down') {
       // Only the host authoritatively decides damage/death so one player dying never ends a room by accident.
@@ -359,8 +363,13 @@ io.on('connection', socket => {
     if (type === 'player-hit' && evt.playerId) {
       const victim = room.players.find(p => p.id === evt.playerId);
       if (victim) {
-        victim.lives = Math.max(0, Math.min(100, (victim.lives ?? 100) - Math.max(0, evt.damage || 0)));
-        victim.status = victim.lives <= 0 ? 'down' : 'hit';
+        if (victim.shieldUntil && victim.shieldUntil > Date.now()) {
+          victim.status = 'shielded';
+          evt.damage = 0;
+        } else {
+          victim.lives = Math.max(0, Math.min(100, (victim.lives ?? 100) - Math.max(0, evt.damage || 0)));
+          victim.status = victim.lives <= 0 ? 'down' : 'hit';
+        }
       }
     }
     if (type === 'player-down' && evt.playerId) {

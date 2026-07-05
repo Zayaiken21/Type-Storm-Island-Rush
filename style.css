@@ -119,11 +119,11 @@ select option { color: #061d3d; }
 .power-buttons::-webkit-scrollbar { display: none; }
 .power-btn { flex: 0 0 auto; min-height: 34px; padding: 0 10px; border-radius: 999px; color: #062143; background: linear-gradient(145deg, #46f4a8, #ffe066); font-weight: 1000; font-size: clamp(0.72rem, 1.7vw, 0.86rem); box-shadow: 0 7px 16px rgba(0,0,0,.16); }
 .power-btn:disabled { opacity: 0.45; filter: grayscale(1); }
-.mobile-keyboard { position: absolute; z-index: 22; left: 50%; bottom: calc(5px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: max-content; max-width: calc(100vw - 8px); display: none; grid-template-columns: 1fr; gap: 2px; padding: 4px; border-radius: 17px; background: linear-gradient(180deg, rgba(1,13,33,0.66), rgba(1,13,33,0.88)); border: 1px solid rgba(255,255,255,0.18); backdrop-filter: blur(12px); box-shadow: 0 14px 44px rgba(0,0,0,.28); touch-action: manipulation; overflow: hidden; }
+.mobile-keyboard { position: absolute; z-index: 22; left: 50%; bottom: calc(5px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: max-content; max-width: calc(100vw - 4px); display: none; grid-template-columns: 1fr; gap: 3px; padding: 5px; border-radius: 18px; background: linear-gradient(180deg, rgba(1,13,33,0.60), rgba(1,13,33,0.88)); border: 1px solid rgba(255,255,255,0.20); backdrop-filter: blur(12px); box-shadow: 0 14px 44px rgba(0,0,0,.28); touch-action: manipulation; overflow: hidden; }
 .mobile-keyboard.visible { display: grid; }
-.key-row { display: flex; justify-content: center; gap: 2px; }
-.key-btn { min-height: clamp(38px, 5.4dvh, 48px); min-width: clamp(38px, 8.9vw, 58px); padding: 0 4px; border-radius: 12px; color: white; background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.22); font-weight: 1000; font-size: clamp(1.16rem, 4.9vw, 1.52rem); line-height: 1; }
-.key-btn.wide { min-width: min(31vw, 132px); }
+.key-row { display: flex; justify-content: center; gap: 3px; }
+.key-btn { height: clamp(48px, 6.5dvh, 62px); width: clamp(43px, 9.15vw, 65px); min-width: 0; padding: 0 2px; border-radius: 14px; color: white; background: rgba(255,255,255,0.20); border: 1px solid rgba(255,255,255,0.24); font-weight: 1000; font-size: clamp(1.50rem, 5.9vw, 2.05rem); line-height: 1; box-shadow: inset 0 -3px 0 rgba(0,0,0,.16); }
+.key-btn.wide { width: min(32vw, 180px); }
 .hidden-typing { position: fixed; opacity: 0; pointer-events: none; left: -1000px; top: -1000px; width: 1px; height: 1px; }
 body.keyboard-open .hud { padding-bottom: 0; }
 body.keyboard-open .leaderboard { bottom: calc(var(--keyboard-space) + 66px + env(safe-area-inset-bottom)); top: auto; }
@@ -167,10 +167,10 @@ body.keyboard-open .leaderboard { bottom: calc(var(--keyboard-space) + 66px + en
   .target-box, .wave-box { min-height: 32px; font-size: .78rem; }
   .power-buttons { width: calc(100vw - 10px); }
   .power-btn { min-height: 31px; font-size: .72rem; padding: 0 9px; }
-  .mobile-keyboard { width: max-content; max-width: calc(100vw - 8px); gap: 2px; padding: 4px; border-radius: 18px; }
-  .key-row { gap: 2px; }
-  .key-btn { min-height: clamp(39px, 5.15dvh, 47px); min-width: clamp(36px, 9vw, 49px); padding: 0 3px; border-radius: 10px; font-size: clamp(1.16rem, 5vw, 1.45rem); }
-  .key-btn.wide { min-width: min(31vw, 132px); }
+  .mobile-keyboard { width: max-content; max-width: calc(100vw - 4px); gap: 3px; padding: 5px; border-radius: 18px; }
+  .key-row { gap: 3px; }
+  .key-btn { height: clamp(49px, 5.9dvh, 62px); width: clamp(43px, 9.15vw, 65px); padding: 0 1px; border-radius: 12px; font-size: clamp(1.48rem, 5.9vw, 2.05rem); }
+  .key-btn.wide { width: min(32vw, 180px); }
   body.keyboard-open .hud-row.bottom { padding-bottom: 0; }
 }
 
@@ -228,10 +228,10 @@ body.keyboard-open .leaderboard { bottom: calc(var(--keyboard-space) + 66px + en
   .hud-row.bottom { bottom: calc(var(--keyboard-space) + 4px + env(safe-area-inset-bottom)); gap: 3px; }
   .power-buttons { width: min(80vw, 720px); gap: 4px; justify-content: flex-start; }
   .power-btn { min-height: 28px; padding: 0 9px; font-size: .70rem; }
-  .mobile-keyboard { width: max-content; max-width: calc(100vw - 150px); left: 50%; right: auto; bottom: calc(4px + env(safe-area-inset-bottom)); transform: translateX(-50%); gap: 2px; padding: 4px; border-radius: 16px; }
+  .mobile-keyboard { width: max-content; max-width: calc(100vw - 12px); left: 50%; right: auto; bottom: calc(2px + env(safe-area-inset-bottom)); transform: translateX(-50%); gap: 2px; padding: 4px; border-radius: 16px; }
   .key-row { gap: 3px; }
-  .key-btn { min-height: clamp(34px, 7.3dvh, 42px); min-width: clamp(44px, 5.4vw, 64px); border-radius: 10px; font-size: clamp(1.18rem, 3.25vw, 1.58rem); }
-  .key-btn.wide { min-width: min(16vw, 132px); }
+  .key-btn { height: clamp(36px, 7.0dvh, 43px); width: clamp(54px, 5.8vw, 74px); border-radius: 11px; font-size: clamp(1.45rem, 3.55vw, 1.95rem); }
+  .key-btn.wide { width: min(18vw, 184px); }
   .leaderboard { top: calc(54px + env(safe-area-inset-top)); bottom: auto; width: min(210px, 25vw); }
   body.keyboard-open .hud { padding-bottom: 0; }
 }
