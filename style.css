@@ -119,11 +119,11 @@ select option { color: #061d3d; }
 .power-buttons::-webkit-scrollbar { display: none; }
 .power-btn { flex: 0 0 auto; min-height: 34px; padding: 0 10px; border-radius: 999px; color: #062143; background: linear-gradient(145deg, #46f4a8, #ffe066); font-weight: 1000; font-size: clamp(0.72rem, 1.7vw, 0.86rem); box-shadow: 0 7px 16px rgba(0,0,0,.16); }
 .power-btn:disabled { opacity: 0.45; filter: grayscale(1); }
-.mobile-keyboard { position: absolute; z-index: 22; left: 50%; bottom: calc(5px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: max-content; max-width: calc(100vw - 4px); display: none; grid-template-columns: 1fr; gap: 3px; padding: 5px; border-radius: 18px; background: linear-gradient(180deg, rgba(1,13,33,0.60), rgba(1,13,33,0.88)); border: 1px solid rgba(255,255,255,0.20); backdrop-filter: blur(12px); box-shadow: 0 14px 44px rgba(0,0,0,.28); touch-action: manipulation; overflow: hidden; }
-.mobile-keyboard.visible { display: grid; }
-.key-row { display: flex; justify-content: center; gap: 3px; }
-.key-btn { height: clamp(48px, 6.5dvh, 62px); width: clamp(43px, 9.15vw, 65px); min-width: 0; padding: 0 2px; border-radius: 14px; color: white; background: rgba(255,255,255,0.20); border: 1px solid rgba(255,255,255,0.24); font-weight: 1000; font-size: clamp(1.50rem, 5.9vw, 2.05rem); line-height: 1; box-shadow: inset 0 -3px 0 rgba(0,0,0,.16); }
-.key-btn.wide { width: min(32vw, 180px); }
+.mobile-keyboard { position: absolute; z-index: 22; left: 50%; bottom: calc(4px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: calc(100vw - 10px); max-width: 900px; display: none; flex-direction: column; gap: 5px; padding: 6px; border-radius: 18px; background: linear-gradient(180deg, rgba(1,13,33,0.72), rgba(1,13,33,0.9)); border: 1px solid rgba(255,255,255,0.18); backdrop-filter: blur(12px); box-shadow: 0 14px 44px rgba(0,0,0,.3); touch-action: manipulation; }
+.mobile-keyboard.visible { display: flex; }
+.key-row { display: flex; gap: 5px; width: 100%; }
+.key-btn { flex: 1 1 0; min-width: 0; height: clamp(46px, 7.6dvh, 72px); border-radius: 12px; color: white; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.24); font-weight: 1000; font-size: clamp(1.2rem, 5.4vw, 1.7rem); line-height: 1; display: flex; align-items: center; justify-content: center; }
+.key-btn.wide { flex: 2.3 1 0; }
 .hidden-typing { position: fixed; opacity: 0; pointer-events: none; left: -1000px; top: -1000px; width: 1px; height: 1px; }
 body.keyboard-open .hud { padding-bottom: 0; }
 body.keyboard-open .leaderboard { bottom: calc(var(--keyboard-space) + 66px + env(safe-area-inset-bottom)); top: auto; }
@@ -161,16 +161,16 @@ body.keyboard-open .leaderboard { bottom: calc(var(--keyboard-space) + 66px + en
 }
 
 @media (max-width: 560px) and (orientation: portrait) {
-  .game-screen::after { display:none !important; content:""; }
+  .game-screen::after { content: "Landscape helps"; position: absolute; right: calc(10px + env(safe-area-inset-right)); top: calc(88px + env(safe-area-inset-top)); transform: none; padding: 7px 10px; border-radius: 999px; background: rgba(0,0,0,0.36); color: white; font-weight: 900; font-size: .72rem; pointer-events: none; opacity: 0.5; }
   .leaderboard { display: none; }
   .play-status-row { gap: 5px; }
   .target-box, .wave-box { min-height: 32px; font-size: .78rem; }
   .power-buttons { width: calc(100vw - 10px); }
   .power-btn { min-height: 31px; font-size: .72rem; padding: 0 9px; }
-  .mobile-keyboard { width: max-content; max-width: calc(100vw - 4px); gap: 3px; padding: 5px; border-radius: 18px; }
-  .key-row { gap: 3px; }
-  .key-btn { height: clamp(49px, 5.9dvh, 62px); width: clamp(43px, 9.15vw, 65px); padding: 0 1px; border-radius: 12px; font-size: clamp(1.48rem, 5.9vw, 2.05rem); }
-  .key-btn.wide { width: min(32vw, 180px); }
+  .mobile-keyboard { width: calc(100vw - 8px); max-width: 640px; gap: 5px; padding: 5px; border-radius: 18px; }
+  .key-row { gap: 5px; }
+  .key-btn { height: clamp(48px, 8dvh, 66px); border-radius: 11px; font-size: clamp(1.25rem, 6.2vw, 1.7rem); }
+  .key-btn.wide { flex: 2.3 1 0; }
   body.keyboard-open .hud-row.bottom { padding-bottom: 0; }
 }
 
@@ -222,133 +222,16 @@ body.keyboard-open .leaderboard { bottom: calc(var(--keyboard-space) + 66px + en
   .big-code { min-height: 66px; }
 }
 
-@media (max-height: 520px) and (orientation: landscape) {
+@media (max-height: 600px) and (orientation: landscape) {
   .hud-row.top { justify-content: center; gap: 6px; padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
   .hud-pill, .target-box, .wave-box { min-height: 32px; padding: 5px 9px; font-size: .78rem; }
   .hud-row.bottom { bottom: calc(var(--keyboard-space) + 4px + env(safe-area-inset-bottom)); gap: 3px; }
   .power-buttons { width: min(80vw, 720px); gap: 4px; justify-content: flex-start; }
   .power-btn { min-height: 28px; padding: 0 9px; font-size: .70rem; }
-  .mobile-keyboard { width: max-content; max-width: calc(100vw - 12px); left: 50%; right: auto; bottom: calc(2px + env(safe-area-inset-bottom)); transform: translateX(-50%); gap: 2px; padding: 4px; border-radius: 16px; }
-  .key-row { gap: 3px; }
-  .key-btn { height: clamp(36px, 7.0dvh, 43px); width: clamp(54px, 5.8vw, 74px); border-radius: 11px; font-size: clamp(1.45rem, 3.55vw, 1.95rem); }
-  .key-btn.wide { width: min(18vw, 184px); }
+  .mobile-keyboard { width: calc(100vw - 12px); max-width: none; left: 50%; right: auto; bottom: calc(3px + env(safe-area-inset-bottom)); transform: translateX(-50%); gap: 4px; padding: 5px; border-radius: 14px; }
+  .key-row { gap: 4px; }
+  .key-btn { height: clamp(26px, 9.4dvh, 42px); border-radius: 9px; font-size: clamp(0.95rem, 3.3vw, 1.42rem); }
+  .key-btn.wide { flex: 2.4 1 0; }
   .leaderboard { top: calc(54px + env(safe-area-inset-top)); bottom: auto; width: min(210px, 25vw); }
   body.keyboard-open .hud { padding-bottom: 0; }
-}
-
-/* Final mobile typing fix: bigger, easier keys without adding unused keyboard box space. */
-.mobile-keyboard {
-  width: min(100vw - 2px, 760px);
-  max-width: calc(100vw - 2px);
-  gap: 2px;
-  padding: 3px 3px 4px;
-  border-radius: 16px;
-  overflow: hidden;
-}
-.key-row {
-  width: 100%;
-  display: grid;
-  justify-content: stretch;
-  gap: 2px;
-}
-.key-row:nth-child(1),
-.key-row:nth-child(2) { grid-template-columns: repeat(10, minmax(0, 1fr)); }
-.key-row:nth-child(3) { grid-template-columns: repeat(9, minmax(0, 1fr)); padding: 0 4.8%; }
-.key-row:nth-child(4) { grid-template-columns: repeat(7, minmax(0, 1fr)); padding: 0 14.6%; }
-.key-row:nth-child(5) { grid-template-columns: 1.1fr 1.1fr 1.1fr; padding: 0 3%; }
-.key-btn,
-.key-btn.wide {
-  width: 100%;
-  height: clamp(56px, 7.1dvh, 68px);
-  border-radius: 13px;
-  font-size: clamp(1.85rem, 6.9vw, 2.45rem);
-  letter-spacing: -0.03em;
-  padding: 0;
-}
-.key-btn.wide { font-size: clamp(1.55rem, 6.2vw, 2.25rem); }
-
-@media (max-width: 560px) and (orientation: portrait) {
-  .mobile-keyboard {
-    width: calc(100vw - 2px);
-    max-width: calc(100vw - 2px);
-    left: 50%;
-    bottom: calc(3px + env(safe-area-inset-bottom));
-    gap: 2px;
-    padding: 3px;
-  }
-  .key-row { gap: 2px; }
-  .key-btn,
-  .key-btn.wide {
-    height: clamp(56px, 6.55dvh, 66px);
-    font-size: clamp(1.82rem, 7vw, 2.35rem);
-    border-radius: 12px;
-  }
-  .key-btn.wide { font-size: clamp(1.45rem, 6.3vw, 2.1rem); }
-}
-
-@media (max-height: 520px) and (orientation: landscape) {
-  .mobile-keyboard {
-    width: min(94vw, 820px);
-    max-width: min(94vw, 820px);
-    gap: 2px;
-    padding: 3px;
-    bottom: calc(2px + env(safe-area-inset-bottom));
-  }
-  .key-row { gap: 2px; }
-  .key-row:nth-child(3) { padding: 0 4.6%; }
-  .key-row:nth-child(4) { padding: 0 14%; }
-  .key-row:nth-child(5) { padding: 0 12%; grid-template-columns: .9fr 1fr .9fr; }
-  .key-btn,
-  .key-btn.wide {
-    height: clamp(39px, 8.4dvh, 48px);
-    font-size: clamp(1.85rem, 4.15vw, 2.55rem);
-    border-radius: 11px;
-  }
-  .key-btn.wide { font-size: clamp(1.55rem, 3.75vw, 2.25rem); }
-}
-
-
-/* Patch: remove landscape hint and reclaim gameplay space while keeping a large keyboard. */
-.game-screen::after { display:none !important; content:"" !important; }
-
-/* Bring target and power row closer to keyboard and compress unused padding. */
-.hud-row.bottom { bottom: calc(var(--keyboard-space) + 6px + env(safe-area-inset-bottom)); gap: 6px; }
-.power-buttons { gap: 6px; max-width: min(98vw, 760px); }
-.power-btn { min-height: 34px; font-size: .82rem; padding: 0 12px; }
-
-/* Large keys, but more compact overall keyboard shell to reveal more of the playfield. */
-.mobile-keyboard { width: min(100vw - 2px, 780px); max-width: calc(100vw - 2px); padding: 2px 2px 3px; gap: 2px; border-radius: 15px; }
-.key-row { gap: 2px; }
-.key-row:nth-child(3) { padding: 0 4.5%; }
-.key-row:nth-child(4) { padding: 0 13.8%; }
-.key-row:nth-child(5) { padding: 0 2.5%; grid-template-columns: 1.02fr 1.08fr 1.02fr; }
-.key-btn, .key-btn.wide { height: clamp(52px, 6.2dvh, 62px); font-size: clamp(1.75rem, 6.6vw, 2.28rem); border-radius: 12px; }
-.key-btn.wide { font-size: clamp(1.42rem, 5.8vw, 1.92rem); }
-
-@media (max-width: 560px) and (orientation: portrait) {
-  .hud-row.bottom { bottom: calc(var(--keyboard-space) + 4px + env(safe-area-inset-bottom)); }
-  .target-box, .wave-box { min-height: 34px; font-size: .8rem; }
-  .power-buttons { width: calc(100vw - 6px); gap: 5px; }
-  .power-btn { min-height: 32px; font-size: .76rem; padding: 0 10px; }
-  .mobile-keyboard { width: calc(100vw - 2px); max-width: calc(100vw - 2px); bottom: calc(2px + env(safe-area-inset-bottom)); padding: 2px; gap: 2px; border-radius: 14px; }
-  .key-row { gap: 2px; }
-  .key-row:nth-child(3) { padding: 0 4.4%; }
-  .key-row:nth-child(4) { padding: 0 13.2%; }
-  .key-row:nth-child(5) { padding: 0 1.8%; }
-  .key-btn, .key-btn.wide { height: clamp(50px, 5.85dvh, 58px); font-size: clamp(1.62rem, 6.55vw, 2.14rem); border-radius: 11px; }
-  .key-btn.wide { font-size: clamp(1.36rem, 5.6vw, 1.84rem); }
-}
-
-@media (max-height: 520px) and (orientation: landscape) {
-  .hud-row.bottom { bottom: calc(var(--keyboard-space) + 2px + env(safe-area-inset-bottom)); gap: 4px; }
-  .target-box, .wave-box { min-height: 29px; font-size: .73rem; }
-  .power-buttons { width: min(72vw, 700px); gap: 4px; }
-  .power-btn { min-height: 28px; font-size: .68rem; padding: 0 8px; }
-  .mobile-keyboard { width: min(84vw, 760px); max-width: min(84vw, 760px); bottom: calc(1px + env(safe-area-inset-bottom)); padding: 2px; gap: 2px; border-radius: 14px; }
-  .key-row { gap: 2px; }
-  .key-row:nth-child(3) { padding: 0 4.2%; }
-  .key-row:nth-child(4) { padding: 0 13%; }
-  .key-row:nth-child(5) { padding: 0 12%; grid-template-columns: .96fr 1.02fr .96fr; }
-  .key-btn, .key-btn.wide { height: clamp(36px, 7.1dvh, 42px); font-size: clamp(1.38rem, 3.2vw, 1.9rem); border-radius: 10px; }
-  .key-btn.wide { font-size: clamp(1.18rem, 2.8vw, 1.58rem); }
 }

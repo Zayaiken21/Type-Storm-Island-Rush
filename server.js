@@ -18,19 +18,7 @@ const WORLD_COUNT = 110;
 const ROOM_TTL_MS = 1000 * 60 * 60 * 4;
 const rooms = new Map();
 
-app.use((req, res, next) => {
-  // Prevent Safari/Render/GitHub update mismatches from serving an old index with a new game.js.
-  if (req.path === '/' || req.path.endsWith('.html')) {
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-  } else if (/\.(?:js|css)$/i.test(req.path)) {
-    res.setHeader('Cache-Control', 'no-cache, max-age=0, must-revalidate');
-  }
-  next();
-});
-
-app.use(express.static(path.join(__dirname), { maxAge: 0, etag: false }));
+app.use(express.static(path.join(__dirname)));
 app.get('/health', (_req, res) => res.json({ ok: true, rooms: rooms.size }));
 app.get('*', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
@@ -88,7 +76,6 @@ function publicRoom(room) {
       lives: p.lives ?? 100,
       status: p.status || 'lobby',
       connected: p.connected !== false,
-      shieldUntil: p.shieldUntil || 0,
       replacedHuman: !!p.replacedHuman
     })),
     votes: room.votes || {}
@@ -327,10 +314,9 @@ io.on('connection', socket => {
     player.combo = Math.max(1, Math.floor(Number(payload.combo || 1)));
     player.accuracy = Math.max(0, Math.min(100, Number(payload.accuracy ?? 100)));
     player.lives = Math.max(0, Math.min(100, Number(payload.lives ?? 100)));
-    if (payload.shield) player.shieldUntil = Date.now() + 3200;
     player.status = String(payload.status || 'playing').slice(0, 20);
     room.lastSeen = Date.now();
-    socket.to(room.code).emit('player:stats', { id: player.id, score: player.score, combo: player.combo, accuracy: player.accuracy, lives: player.lives, status: player.status, shieldUntil: player.shieldUntil || 0 });
+    socket.to(room.code).emit('player:stats', { id: player.id, score: player.score, combo: player.combo, accuracy: player.accuracy, lives: player.lives, status: player.status });
   });
 
   socket.on('game:snapshot', (payload = {}) => {
@@ -351,7 +337,7 @@ io.on('connection', socket => {
   socket.on('game:event', (payload = {}) => {
     const { room, player } = findRoomAndPlayer(socket);
     if (!room || !player || room.phase !== 'playing') return;
-    const allowed = new Set(['enemy-kill', 'enemy-progress', 'boss-damage', 'player-hit', 'player-down']);
+    const allowed = new Set(['enemy-kill', 'boss-damage', 'player-hit', 'player-down']);
     const type = String(payload.type || '');
     if (!allowed.has(type)) return;
     if (payload.seed != null && Number(payload.seed) !== Number(room.seed)) return;
@@ -364,9 +350,7 @@ io.on('connection', socket => {
       damage: Number(payload.damage || 0),
       hp: payload.hp != null ? Number(payload.hp) : undefined,
       phase: payload.phase != null ? Number(payload.phase) : undefined,
-      prompt: payload.prompt ? String(payload.prompt).slice(0, 120) : undefined,
-      progress: payload.progress != null ? Number(payload.progress) : undefined,
-      seed: room.seed
+      prompt: payload.prompt ? String(payload.prompt).slice(0, 120) : undefined
     };
     if (type === 'player-hit' || type === 'player-down') {
       // Only the host authoritatively decides damage/death so one player dying never ends a room by accident.
@@ -375,13 +359,8 @@ io.on('connection', socket => {
     if (type === 'player-hit' && evt.playerId) {
       const victim = room.players.find(p => p.id === evt.playerId);
       if (victim) {
-        if (victim.shieldUntil && victim.shieldUntil > Date.now()) {
-          victim.status = 'shielded';
-          evt.damage = 0;
-        } else {
-          victim.lives = Math.max(0, Math.min(100, (victim.lives ?? 100) - Math.max(0, evt.damage || 0)));
-          victim.status = victim.lives <= 0 ? 'down' : 'hit';
-        }
+        victim.lives = Math.max(0, Math.min(100, (victim.lives ?? 100) - Math.max(0, evt.damage || 0)));
+        victim.status = victim.lives <= 0 ? 'down' : 'hit';
       }
     }
     if (type === 'player-down' && evt.playerId) {
