@@ -18,7 +18,19 @@ const WORLD_COUNT = 110;
 const ROOM_TTL_MS = 1000 * 60 * 60 * 4;
 const rooms = new Map();
 
-app.use(express.static(path.join(__dirname)));
+app.use((req, res, next) => {
+  // Prevent Safari/Render/GitHub update mismatches from serving an old index with a new game.js.
+  if (req.path === '/' || req.path.endsWith('.html')) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  } else if (/\.(?:js|css)$/i.test(req.path)) {
+    res.setHeader('Cache-Control', 'no-cache, max-age=0, must-revalidate');
+  }
+  next();
+});
+
+app.use(express.static(path.join(__dirname), { maxAge: 0, etag: false }));
 app.get('/health', (_req, res) => res.json({ ok: true, rooms: rooms.size }));
 app.get('*', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 

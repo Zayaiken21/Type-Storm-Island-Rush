@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="TypeStorm" />
   <title>TypeStorm: Island Rush</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=loadfix-20260705" />
 </head>
 <body>
   <div id="app" class="app">
@@ -269,6 +269,20 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="game.js"></script>
+  <script>
+    window.addEventListener('error', function (event) {
+      var card = document.querySelector('.loading-card');
+      if (!card) return;
+      var msg = document.getElementById('loadingTip');
+      if (msg) msg.textContent = 'Loading issue fixed build detected. Refresh once if this message stays on screen.';
+      console.error('TypeStorm load error:', event.message || event.error);
+    });
+    window.addEventListener('unhandledrejection', function (event) {
+      var msg = document.getElementById('loadingTip');
+      if (msg) msg.textContent = 'Loading issue fixed build detected. Refresh once if this message stays on screen.';
+      console.error('TypeStorm promise error:', event.reason);
+    });
+  </script>
+  <script src="game.js?v=loadfix-20260705"></script>
 </body>
 </html>

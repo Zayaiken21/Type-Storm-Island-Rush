@@ -75,9 +75,18 @@
     const classes = 'scout guardian charger trickster bomber drifter glider bruiser phantom racer biter spinner lurker knight captain wizard rover striker crawler diver snapper whisper sentinel'.split(' ');
     const out = [];
     const seen = new Set();
-    for (let i = 0; out.length < 1800; i++) {
-      const name = `${modifiers[i % modifiers.length]} ${creatures[(i * 7) % creatures.length]} ${classes[(i * 13) % classes.length]}`;
-      if (!seen.has(name)) { seen.add(name); out.push(name); }
+    // Use nested deterministic recipes instead of a single modular loop.
+    // The old loop could cycle before reaching the requested count, which caused
+    // the game to hang on a blank page during startup. This guarantees a finite,
+    // unique library while still keeping everything procedural and lightweight.
+    for (const mod of modifiers) {
+      for (const creature of creatures) {
+        for (const cls of classes) {
+          const name = `${mod} ${creature} ${cls}`;
+          if (!seen.has(name)) { seen.add(name); out.push(name); }
+          if (out.length >= 2500) return out;
+        }
+      }
     }
     return out;
   })();
