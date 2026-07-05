@@ -1071,24 +1071,27 @@
       }
     }
     getTarget() {
-      let target = this.enemies.find(e => e.id === this.activeId);
-      if (!target && this.enemies.length) {
-        target = [...this.enemies].sort((a, b) => a.x - b.x)[0];
-        this.setTarget(target.id, true);
+      const target = this.enemies.find(e => e.id === this.activeId) || null;
+      if (!target && this.activeId) {
+        // Do not auto-pick a word before the player types.
+        // If the old target was defeated by another player, clear the stale lock
+        // so the next first letter can choose a fresh enemy.
+        this.activeId = null;
+        this.typedBuffer = '';
       }
       return target;
     }
     findTargetForKey(key) {
-      if (!key || key.length !== 1) return this.getTarget();
+      if (!key || key.length !== 1) return null;
       const lower = key.toLowerCase();
       const matches = this.enemies
-        .filter(e => e.prompt?.text?.startsWith(lower))
-        .sort((a, b) => a.x - b.x);
+        .filter(e => e.prompt?.text?.toLowerCase().startsWith(lower))
+        .sort((a, b) => a.x - b.x || a.y - b.y);
       if (matches.length) {
         this.setTarget(matches[0].id, true);
         return matches[0];
       }
-      return this.getTarget();
+      return null;
     }
     handleKey(key) {
       if (!this.running || this.resultShown) return;
@@ -1113,8 +1116,16 @@
       if (key.length !== 1) return;
       key = key.toLowerCase();
       const target = this.typedBuffer ? this.getTarget() : this.findTargetForKey(key);
-      if (!target) return;
       this.totalKeys++;
+      if (!target) {
+        if (this.accuracyShield <= 0) {
+          this.wrongKeys++;
+          this.combo = 1;
+        }
+        this.audio.beep('wrong');
+        this.updateHud(true);
+        return;
+      }
       const candidate = this.typedBuffer + key;
       if (target.prompt.text.startsWith(candidate)) {
         this.typedBuffer = candidate;
@@ -1129,7 +1140,6 @@
         if (this.accuracyShield <= 0) {
           this.wrongKeys++;
           this.combo = 1;
-          this.totalKeys++;
         }
         target.shake = 0.28;
         this.audio.beep('wrong');

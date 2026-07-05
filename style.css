@@ -235,3 +235,74 @@ body.keyboard-open .leaderboard { bottom: calc(var(--keyboard-space) + 66px + en
   .leaderboard { top: calc(54px + env(safe-area-inset-top)); bottom: auto; width: min(210px, 25vw); }
   body.keyboard-open .hud { padding-bottom: 0; }
 }
+
+/* Final mobile typing fix: bigger, easier keys without adding unused keyboard box space. */
+.mobile-keyboard {
+  width: min(100vw - 2px, 760px);
+  max-width: calc(100vw - 2px);
+  gap: 2px;
+  padding: 3px 3px 4px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.key-row {
+  width: 100%;
+  display: grid;
+  justify-content: stretch;
+  gap: 2px;
+}
+.key-row:nth-child(1),
+.key-row:nth-child(2) { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+.key-row:nth-child(3) { grid-template-columns: repeat(9, minmax(0, 1fr)); padding: 0 4.8%; }
+.key-row:nth-child(4) { grid-template-columns: repeat(7, minmax(0, 1fr)); padding: 0 14.6%; }
+.key-row:nth-child(5) { grid-template-columns: 1.1fr 1.1fr 1.1fr; padding: 0 3%; }
+.key-btn,
+.key-btn.wide {
+  width: 100%;
+  height: clamp(56px, 7.1dvh, 68px);
+  border-radius: 13px;
+  font-size: clamp(1.85rem, 6.9vw, 2.45rem);
+  letter-spacing: -0.03em;
+  padding: 0;
+}
+.key-btn.wide { font-size: clamp(1.55rem, 6.2vw, 2.25rem); }
+
+@media (max-width: 560px) and (orientation: portrait) {
+  .mobile-keyboard {
+    width: calc(100vw - 2px);
+    max-width: calc(100vw - 2px);
+    left: 50%;
+    bottom: calc(3px + env(safe-area-inset-bottom));
+    gap: 2px;
+    padding: 3px;
+  }
+  .key-row { gap: 2px; }
+  .key-btn,
+  .key-btn.wide {
+    height: clamp(56px, 6.55dvh, 66px);
+    font-size: clamp(1.82rem, 7vw, 2.35rem);
+    border-radius: 12px;
+  }
+  .key-btn.wide { font-size: clamp(1.45rem, 6.3vw, 2.1rem); }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .mobile-keyboard {
+    width: min(94vw, 820px);
+    max-width: min(94vw, 820px);
+    gap: 2px;
+    padding: 3px;
+    bottom: calc(2px + env(safe-area-inset-bottom));
+  }
+  .key-row { gap: 2px; }
+  .key-row:nth-child(3) { padding: 0 4.6%; }
+  .key-row:nth-child(4) { padding: 0 14%; }
+  .key-row:nth-child(5) { padding: 0 12%; grid-template-columns: .9fr 1fr .9fr; }
+  .key-btn,
+  .key-btn.wide {
+    height: clamp(39px, 8.4dvh, 48px);
+    font-size: clamp(1.85rem, 4.15vw, 2.55rem);
+    border-radius: 11px;
+  }
+  .key-btn.wide { font-size: clamp(1.55rem, 3.75vw, 2.25rem); }
+}
