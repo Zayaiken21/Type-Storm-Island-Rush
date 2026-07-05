@@ -42,16 +42,16 @@
   }
 
   const WORLDS = [
-    { name: 'Sunny Coral Coast', mood: 'happy steel drums', boss: 'Coral Jaw', colors: ['#20c7d7', '#0c80d5', '#ffe066'], enemies: ['shark', 'piranha', 'jellyfish', 'crab', 'coral beast'], effect: 'sun sparkles', prompt: 'easy ocean words' },
-    { name: 'Pirate Reef', mood: 'playful sea shanty', boss: 'Captain Bitebeard', colors: ['#16477a', '#2aa7a7', '#ffb347'], enemies: ['pirate fish', 'treasure mimic', 'crab', 'eel', 'bubble bat'], effect: 'gold coins', prompt: 'pirate phrases' },
-    { name: 'Jungle Lagoon', mood: 'warm drums and birds', boss: 'Vinefin Titan', colors: ['#0f7b52', '#20d080', '#f6d365'], enemies: ['piranha', 'vine eel', 'toxic slime', 'jungle ray', 'bubble bat'], effect: 'leaf bursts', prompt: 'animal island words' },
-    { name: 'Iceberg Ocean', mood: 'soft bells and arctic wind', boss: 'Frost Whale King', colors: ['#8bd7ff', '#4c8fea', '#e9fbff'], enemies: ['ice whale', 'frost crab', 'snow jelly', 'polar eel', 'ghost ray'], effect: 'snow shimmer', prompt: 'accuracy drills' },
-    { name: 'Volcano Tide', mood: 'deep drums and lava pops', boss: 'Magma Shell', colors: ['#fc5c40', '#7b1d36', '#ffcf4a'], enemies: ['lava turtle', 'magma eel', 'ash shark', 'ember crab', 'toxic slime'], effect: 'embers', prompt: 'number drills' },
-    { name: 'Neon Cyber Sea', mood: 'retro synth wave', boss: 'Neon Megabyte', colors: ['#41f4ff', '#9b5cff', '#16ff8f'], enemies: ['robotic fish', 'sea drone', 'mechanical octopus', 'laser jelly', 'byte shark'], effect: 'neon trails', prompt: 'tech symbols' },
-    { name: 'Ancient Atlantis', mood: 'mystic choir pads', boss: 'Atlantean Hydra', colors: ['#2fd5b4', '#2857b8', '#ffd166'], enemies: ['ancient ray', 'stone crab', 'hydra minion', 'coral beast', 'treasure mimic'], effect: 'rune circles', prompt: 'advanced phrases' },
-    { name: 'Stormbreaker Isles', mood: 'storm drums and thunder', boss: 'Storm Serpent', colors: ['#2d3e8f', '#12c6f3', '#f4f7ff'], enemies: ['storm serpent', 'electric eel', 'cloud jelly', 'sea drone', 'shark'], effect: 'lightning arcs', prompt: 'speed drills' },
-    { name: 'Moonlit Abyss', mood: 'dreamy deep sea bells', boss: 'Abyss Phantom', colors: ['#15103d', '#5535a5', '#8ef5ff'], enemies: ['ghost ray', 'abyss jelly', 'shadow eel', 'bubble bat', 'phantom shark'], effect: 'moon glow', prompt: 'mixed case phrases' },
-    { name: 'Alien Star Ocean', mood: 'cosmic plucks and pulses', boss: 'Star Kraken', colors: ['#481f9d', '#00e0ff', '#ff79d7'], enemies: ['alien squid', 'star drone', 'cosmic crab', 'void whale', 'mechanical octopus'], effect: 'star portals', prompt: 'boss challenge phrases' }
+    { name: 'Sunny Coral Coast', mood: 'happy steel drums', boss: 'Coral Jaw', colors: ['#20c7d7', '#0c80d5', '#ffe066'], enemies: ['shark', 'piranha', 'jellyfish', 'crab', 'coral beast', 'reef puffer', 'sun ray', 'shell snapper', 'pearl clam', 'bubble seahorse'], effect: 'sun sparkles', prompt: 'easy ocean words' },
+    { name: 'Pirate Reef', mood: 'playful sea shanty', boss: 'Captain Bitebeard', colors: ['#16477a', '#2aa7a7', '#ffb347'], enemies: ['pirate fish', 'treasure mimic', 'crab', 'eel', 'bubble bat', 'cannon puffer', 'map ray', 'anchor slug', 'flag seahorse', 'coin clam'], effect: 'gold coins', prompt: 'pirate phrases' },
+    { name: 'Jungle Lagoon', mood: 'warm drums and birds', boss: 'Vinefin Titan', colors: ['#0f7b52', '#20d080', '#f6d365'], enemies: ['piranha', 'vine eel', 'toxic slime', 'jungle ray', 'bubble bat', 'frogfish', 'leaf turtle', 'moss crab', 'orchid squid', 'lagoon nautilus'], effect: 'leaf bursts', prompt: 'animal island words' },
+    { name: 'Iceberg Ocean', mood: 'soft bells and arctic wind', boss: 'Frost Whale King', colors: ['#8bd7ff', '#4c8fea', '#e9fbff'], enemies: ['ice whale', 'frost crab', 'snow jelly', 'polar eel', 'ghost ray', 'crystal narwhal', 'snow puffer', 'ice clam', 'aurora manta', 'glacier turtle'], effect: 'snow shimmer', prompt: 'accuracy drills' },
+    { name: 'Volcano Tide', mood: 'deep drums and lava pops', boss: 'Magma Shell', colors: ['#fc5c40', '#7b1d36', '#ffcf4a'], enemies: ['lava turtle', 'magma eel', 'ash shark', 'ember crab', 'toxic slime', 'cinder ray', 'fire puffer', 'obsidian clam', 'smoke squid', 'lava nautilus'], effect: 'embers', prompt: 'number drills' },
+    { name: 'Neon Cyber Sea', mood: 'retro synth wave', boss: 'Neon Megabyte', colors: ['#41f4ff', '#9b5cff', '#16ff8f'], enemies: ['robotic fish', 'sea drone', 'mechanical octopus', 'laser jelly', 'byte shark', 'cyber puffer', 'pixel ray', 'data clam', 'circuit seahorse', 'servo crab'], effect: 'neon trails', prompt: 'tech symbols' },
+    { name: 'Ancient Atlantis', mood: 'mystic choir pads', boss: 'Atlantean Hydra', colors: ['#2fd5b4', '#2857b8', '#ffd166'], enemies: ['ancient ray', 'stone crab', 'hydra minion', 'coral beast', 'treasure mimic', 'rune turtle', 'temple clam', 'obelisk eel', 'gold nautilus', 'guardian puffer'], effect: 'rune circles', prompt: 'advanced phrases' },
+    { name: 'Stormbreaker Isles', mood: 'storm drums and thunder', boss: 'Storm Serpent', colors: ['#2d3e8f', '#12c6f3', '#f4f7ff'], enemies: ['storm serpent', 'electric eel', 'cloud jelly', 'sea drone', 'shark', 'thunder puffer', 'rain ray', 'bolt crab', 'wind squid', 'cloud clam'], effect: 'lightning arcs', prompt: 'speed drills' },
+    { name: 'Moonlit Abyss', mood: 'dreamy deep sea bells', boss: 'Abyss Phantom', colors: ['#15103d', '#5535a5', '#8ef5ff'], enemies: ['ghost ray', 'abyss jelly', 'shadow eel', 'bubble bat', 'phantom shark', 'moon puffer', 'dream clam', 'night squid', 'lunar nautilus', 'glow seahorse'], effect: 'moon glow', prompt: 'mixed case phrases' },
+    { name: 'Alien Star Ocean', mood: 'cosmic plucks and pulses', boss: 'Star Kraken', colors: ['#481f9d', '#00e0ff', '#ff79d7'], enemies: ['alien squid', 'star drone', 'cosmic crab', 'void whale', 'mechanical octopus', 'orbit puffer', 'comet ray', 'ufo clam', 'plasma eel', 'starlight nautilus'], effect: 'star portals', prompt: 'boss challenge phrases' }
   ];
 
   const GAME_MODES = [
@@ -127,7 +127,7 @@
       try {
         const raw = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
         return { ...DEFAULT_SAVE, ...raw, upgrades: { ...DEFAULT_SAVE.upgrades, ...(raw.upgrades || {}) }, owned: raw.owned || [...DEFAULT_SAVE.owned], best: raw.best || {} };
-      } catch { return structuredClone ? structuredClone(DEFAULT_SAVE) : JSON.parse(JSON.stringify(DEFAULT_SAVE)); }
+      } catch { return typeof structuredClone === 'function' ? structuredClone(DEFAULT_SAVE) : JSON.parse(JSON.stringify(DEFAULT_SAVE)); }
     }
     static saveGame(save) { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }
   }
@@ -307,7 +307,7 @@
 
   class SpriteFactory {
     constructor() {
-      this.bodyShapes = ['oval', 'long', 'triangle', 'round', 'whale', 'crab', 'jelly', 'eel', 'turtle', 'squid', 'drone', 'mimic'];
+      this.bodyShapes = ['oval', 'long', 'triangle', 'round', 'whale', 'crab', 'jelly', 'eel', 'turtle', 'squid', 'drone', 'mimic', 'puffer', 'ray', 'angler', 'clam', 'seahorse', 'slug', 'nautilus'];
       this.eyeStyles = ['dot', 'wide', 'sleepy', 'angry', 'robot', 'glow', 'star'];
       this.finStyles = ['small', 'sail', 'spike', 'leaf', 'armor', 'wing', 'none'];
       this.tailStyles = ['fork', 'fan', 'bolt', 'ribbon', 'bubble', 'propeller', 'tentacles'];
@@ -331,6 +331,13 @@
       if (type.includes('squid') || type.includes('octopus')) bodyShape = 'squid';
       if (type.includes('drone') || type.includes('robot')) bodyShape = 'drone';
       if (type.includes('whale')) bodyShape = 'whale';
+      if (type.includes('puffer')) bodyShape = 'puffer';
+      if (type.includes('ray') || type.includes('manta')) bodyShape = 'ray';
+      if (type.includes('angler')) bodyShape = 'angler';
+      if (type.includes('clam') || type.includes('shell')) bodyShape = 'clam';
+      if (type.includes('seahorse')) bodyShape = 'seahorse';
+      if (type.includes('slug') || type.includes('slime')) bodyShape = 'slug';
+      if (type.includes('nautilus')) bodyShape = 'nautilus';
       return {
         bodyShape,
         palette,
@@ -393,6 +400,13 @@
         case 'squid': ctx.ellipse(0, -s * 0.12, s * 0.58, s * 0.78, 0, 0, Math.PI * 2); break;
         case 'drone': roundRect(ctx, -s * 0.78, -s * 0.45, s * 1.38, s * 0.9, s * 0.18); break;
         case 'mimic': roundRect(ctx, -s * 0.75, -s * 0.5, s * 1.3, s, s * 0.14); break;
+        case 'puffer': ctx.arc(0, 0, s * 0.68, 0, Math.PI * 2); break;
+        case 'ray': ctx.moveTo(-s * 1.08, 0); ctx.quadraticCurveTo(-s * 0.28, -s * 0.72, s * 0.9, -s * 0.06); ctx.quadraticCurveTo(-s * 0.28, s * 0.72, -s * 1.08, 0); break;
+        case 'angler': ctx.ellipse(-s * 0.08, 0, s * 0.82, s * 0.55, 0, 0, Math.PI * 2); break;
+        case 'clam': ctx.moveTo(-s * 0.78, s * 0.18); ctx.quadraticCurveTo(0, -s * 0.76, s * 0.78, s * 0.18); ctx.quadraticCurveTo(0, s * 0.56, -s * 0.78, s * 0.18); break;
+        case 'seahorse': ctx.ellipse(s * 0.02, -s * 0.08, s * 0.42, s * 0.78, -0.16, 0, Math.PI * 2); break;
+        case 'slug': ctx.moveTo(-s * 0.86, s * 0.22); ctx.quadraticCurveTo(-s * 0.32, -s * 0.56, s * 0.72, -s * 0.18); ctx.quadraticCurveTo(s * 0.92, s * 0.32, -s * 0.86, s * 0.22); break;
+        case 'nautilus': ctx.arc(-s * 0.05, 0, s * 0.62, 0, Math.PI * 2); break;
         default: ctx.ellipse(0, 0, s * 0.88, s * 0.48, 0, 0, Math.PI * 2);
       }
       ctx.fill();
@@ -407,6 +421,22 @@
           ctx.stroke();
         }
         ctx.globalAlpha = 1;
+      }
+      if (r.bodyShape === 'puffer') {
+        ctx.save(); ctx.globalAlpha = 0.7; ctx.strokeStyle = r.palette[2]; ctx.lineWidth = Math.max(1, s * 0.035);
+        for (let i = 0; i < 10; i++) { const a = i * Math.PI * 2 / 10; ctx.beginPath(); ctx.moveTo(Math.cos(a) * s * 0.68, Math.sin(a) * s * 0.68); ctx.lineTo(Math.cos(a) * s * 0.86, Math.sin(a) * s * 0.86); ctx.stroke(); }
+        ctx.restore();
+      }
+      if (r.bodyShape === 'angler') {
+        ctx.save(); ctx.strokeStyle = r.palette[2]; ctx.lineWidth = Math.max(1, s * 0.04); ctx.beginPath(); ctx.moveTo(s * 0.18, -s * 0.48); ctx.quadraticCurveTo(s * 0.38, -s * 0.96, s * 0.72, -s * 0.72); ctx.stroke(); ctx.fillStyle = '#ffe066'; ctx.beginPath(); ctx.arc(s * 0.76, -s * 0.72, s * 0.1, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      }
+      if (r.bodyShape === 'clam' || r.bodyShape === 'nautilus') {
+        ctx.save(); ctx.globalAlpha = 0.42; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(1, s * 0.03);
+        for (let i = 1; i <= 4; i++) { ctx.beginPath(); ctx.arc(-s * 0.05, 0, s * 0.13 * i, 0.2, Math.PI * 1.85); ctx.stroke(); }
+        ctx.restore();
+      }
+      if (r.bodyShape === 'seahorse') {
+        ctx.save(); ctx.strokeStyle = r.palette[2]; ctx.lineWidth = Math.max(2, s * 0.06); ctx.beginPath(); ctx.moveTo(-s * 0.08, s * 0.46); ctx.quadraticCurveTo(-s * 0.52, s * 0.62, -s * 0.28, s * 0.86); ctx.stroke(); ctx.restore();
       }
     }
     drawTail(ctx, r, s, t) {
@@ -852,8 +882,9 @@
       const type = choice(world.enemies, this.rand);
       const id = ++this.enemyId;
       const size = minion ? 24 + this.rand() * 8 : 28 + this.rand() * 20;
-      const yMin = Math.max(92, this.h * 0.16);
-      const yMax = Math.max(yMin + 30, this.h - 95);
+      const area = this.playArea();
+      const yMin = Math.max(area.top + size * 0.5, this.h * 0.14);
+      const yMax = Math.max(yMin + 34, area.bottom - size * 0.7);
       const prompt = this.promptManager.getPrompt({ difficulty: this.difficulty + (minion ? -1 : 0), worldIndex: this.worldIndex, kids: this.kids, seed: this.seed + id * 23 });
       this.enemies.push({
         id,
@@ -882,14 +913,16 @@
       const world = WORLDS[this.worldIndex];
       const prompt = this.promptManager.getPrompt({ difficulty: 10, worldIndex: this.worldIndex, boss: true, seed: this.seed });
       const hp = 260 + this.worldIndex * 45 + this.levelIndex * 25;
+      const area = this.playArea();
+      const bossY = lerp(area.top, area.bottom, 0.48);
       this.enemies.push({
         id: ++this.enemyId,
         type: world.boss,
         recipe: this.spriteFactory.recipe(this.worldIndex, this.seed + 999, world.boss, true),
         prompt,
         x: this.w + 160,
-        y: this.h * 0.46,
-        baseY: this.h * 0.46,
+        y: bossY,
+        baseY: bossY,
         size: clamp(76 + this.worldIndex * 4, 76, 124),
         speed: 12 + this.worldIndex * 1.6,
         hp,
@@ -1082,7 +1115,11 @@
       const you = { id: this.app.multiplayer.playerId || 'local', name: 'You', isAI: false, score: this.score, combo: this.combo, accuracy: this.accuracy(), lives: this.baseHealthPercent(), status: this.paused ? 'paused' : 'playing' };
       const others = this.players.filter(p => p.id !== you.id && p.id !== 'local');
       const list = [you, ...others].sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, MAX_ROOM_PLAYERS);
-      $('leaderboard').innerHTML = list.map((p, i) => `<div class="leader-row"><span>${i + 1}. ${p.isAI ? 'AI ' : ''}${p.name || 'Player'}<br><small>${Math.round(p.accuracy ?? 100)}% • x${p.combo || 1}</small></span><b>${Math.floor(p.score || 0)}</b></div>`).join('');
+      $('leaderboard').innerHTML = list.map((p, i) => {
+        const disconnected = p.connected === false || p.status === 'ai-replaced';
+        const tag = disconnected ? 'Disconnected → AI' : p.isAI ? 'AI typing' : (p.status || 'connected');
+        return `<div class="leader-row ${disconnected ? 'disconnected-row' : ''}"><span>${i + 1}. ${p.isAI ? 'AI ' : ''}${p.name || 'Player'}<br><small>${tag} • ${Math.round(p.accuracy ?? 100)}% • x${p.combo || 1}</small></span><b>${Math.floor(p.score || 0)}</b></div>`;
+      }).join('');
     }
     loop(ts) {
       const dt = Math.min(0.05, ((ts || now()) - (this.lastTs || ts || now())) / 1000 || 0.016);
@@ -1098,11 +1135,29 @@
       this.drawBackground(ctx, world);
       if (!this.running && !this.resultShown) return;
       this.drawBase(ctx);
+      this.drawPlayerDivers(ctx);
       for (const e of this.enemies) this.drawEnemy(ctx, e);
       this.drawParticles(ctx);
       if (this.paused) {
         ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.fillRect(0, 0, this.w, this.h);
       }
+    }
+    keyboardHeight() {
+      const kb = $('mobileKeyboard');
+      const visible = !!(kb && kb.classList.contains('visible'));
+      return visible ? Math.max(kb.offsetHeight || 0, Math.min(this.h * 0.28, 220)) : 0;
+    }
+    playArea() {
+      const kb = this.keyboardHeight();
+      const compact = this.w < 700 || this.h > this.w;
+      const top = compact ? Math.max(96, this.h * 0.14) : Math.max(78, this.h * 0.12);
+      const bottomPad = kb ? kb + (compact ? 108 : 72) : Math.max(90, this.h * 0.12);
+      const bottom = Math.max(top + 120, this.h - bottomPad);
+      return { top, bottom: Math.min(this.h - 72, bottom), keyboard: kb };
+    }
+    basePoint() {
+      const area = this.playArea();
+      return { x: Math.max(58, this.w * 0.12), y: lerp(area.top, area.bottom, 0.56) };
     }
     drawBackground(ctx, world) {
       const g = ctx.createLinearGradient(0, 0, 0, this.h);
@@ -1141,7 +1196,7 @@
       ctx.fillText(`${world.name} • ${world.effect} • ${world.mood}`, 16, this.h - 16);
     }
     drawBase(ctx) {
-      const x = 62, y = this.h * 0.5;
+      const { x, y } = this.basePoint();
       ctx.save();
       ctx.fillStyle = 'rgba(255,224,102,0.25)';
       ctx.beginPath(); ctx.arc(x, y, 70, 0, Math.PI * 2); ctx.fill();
@@ -1154,6 +1209,44 @@
       const hpw = 90 * clamp(this.baseHealth / this.baseHealthMax, 0, 1);
       roundRect(ctx, x - 45, y + 52, 90, 10, 6); ctx.stroke();
       roundRect(ctx, x - 45, y + 52, hpw, 10, 6); ctx.fill();
+      ctx.restore();
+    }
+    drawPlayerDivers(ctx) {
+      const players = (this.players && this.players.length ? this.players : []).slice(0, MAX_ROOM_PLAYERS);
+      if (!players.length) return;
+      const base = this.basePoint();
+      const area = this.playArea();
+      const radius = Math.min(42, Math.max(28, (area.bottom - area.top) / 7));
+      const startY = base.y - Math.min(72, players.length * 11);
+      players.forEach((p, i) => {
+        const col = i % 2;
+        const row = Math.floor(i / 2);
+        const x = base.x + 70 + col * 42;
+        const y = clamp(startY + row * radius, area.top + 18, area.bottom - 18);
+        this.drawMiniDiver(ctx, x, y, 17, p, i);
+      });
+    }
+    drawMiniDiver(ctx, x, y, s, p, i) {
+      const disconnected = p.connected === false || p.status === 'ai-replaced';
+      const ai = !!p.isAI;
+      const palettes = ['#ffe066', '#46f4a8', '#41f4ff', '#ff79d7', '#ff9f43', '#b8ff6a', '#9b5cff'];
+      const suit = disconnected ? '#8fa7b8' : palettes[i % palettes.length];
+      ctx.save();
+      ctx.translate(x, y + Math.sin((this.timer || 0) * 2 + i) * 2);
+      ctx.globalAlpha = disconnected ? 0.72 : 1;
+      ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.beginPath(); ctx.ellipse(0, s * 0.78, s * 0.9, s * 0.24, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.62)'; ctx.lineWidth = Math.max(1.5, s * 0.11);
+      ctx.fillStyle = suit; roundRect(ctx, -s * 0.48, -s * 0.32, s * 0.96, s * 0.92, s * 0.24); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#08213e'; roundRect(ctx, -s * 0.36, -s * 0.18, s * 0.72, s * 0.3, s * 0.14); ctx.fill();
+      ctx.fillStyle = ai ? '#46f4a8' : '#7bd7ff'; ctx.beginPath(); ctx.arc(-s * 0.16, -s * 0.03, s * 0.09, 0, Math.PI * 2); ctx.arc(s * 0.16, -s * 0.03, s * 0.09, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = suit; ctx.lineWidth = s * 0.12; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-s * 0.48, s * 0.06); ctx.lineTo(-s * 0.82, s * 0.28); ctx.moveTo(s * 0.48, s * 0.06); ctx.lineTo(s * 0.82, s * 0.28); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-s * 0.22, s * 0.58); ctx.lineTo(-s * 0.44, s * 0.94); ctx.moveTo(s * 0.22, s * 0.58); ctx.lineTo(s * 0.44, s * 0.94); ctx.stroke();
+      if (disconnected) {
+        ctx.fillStyle = '#ff5b7f'; ctx.beginPath(); ctx.arc(s * 0.48, -s * 0.48, s * 0.17, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = 'rgba(5,24,56,.78)'; roundRect(ctx, -s * 1.15, s * 1.04, s * 2.3, s * 0.54, s * 0.18); ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.font = `800 ${Math.max(8, s * 0.42)}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(p.name || (ai ? 'AI' : 'Player')).slice(0, 8), 0, s * 1.31);
       ctx.restore();
     }
     drawEnemy(ctx, e) {
@@ -1177,7 +1270,8 @@
       const w = Math.min(this.w * 0.62, ctx.measureText(text).width + pad * 2);
       const h = e.boss ? 34 : 30;
       let x = clamp(e.x - w / 2, 8, this.w - w - 8);
-      let y = clamp(e.y - e.size - 44, 58, this.h - 80);
+      const area = this.playArea();
+      let y = clamp(e.y - e.size - 44, 58, Math.max(58, area.bottom - 42));
       if (e.shake) x += Math.sin(now() * 0.08) * e.shake * 12;
       ctx.fillStyle = isTarget ? 'rgba(5, 24, 56, 0.88)' : 'rgba(5, 24, 56, 0.68)';
       ctx.strokeStyle = isTarget ? '#ffe066' : 'rgba(255,255,255,0.22)';
@@ -1278,7 +1372,7 @@
         if (this.currentScreen !== 'gameScreen') return;
         if (['Backspace', 'Enter', 'Escape'].includes(e.key) || e.key.length === 1) {
           e.preventDefault();
-          this.game.handleKey(e.key);
+          if (this.game) this.game.handleKey(e.key);
         }
       }, { capture: true });
       const hidden = $('hiddenTypingInput');
@@ -1339,8 +1433,17 @@
     }
     showOverlay(id) { $(id).classList.add('active'); }
     hideOverlay(id) { $(id).classList.remove('active'); }
+    isTouchLike() {
+      return (navigator.maxTouchPoints || 0) > 0 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    }
     focusTyping() {
-      if (this.settings.mobileKeyboard) $('hiddenTypingInput').focus({ preventScroll: true });
+      const hidden = $('hiddenTypingInput');
+      if (!hidden) return;
+      if (this.isTouchLike() || this.settings.mobileKeyboard) {
+        hidden.blur();
+        return;
+      }
+      hidden.focus({ preventScroll: true });
     }
     setRoomStatus(text) { if ($('roomStatus')) $('roomStatus').textContent = text || ''; }
     updateServerBadge(online) {
@@ -1514,9 +1617,10 @@
       if ($('lobbyModeSelect') && room.mode) $('lobbyModeSelect').value = room.mode;
       this.updateWorldPreview();
       $('lobbyPlayers').innerHTML = room.players.map((p, i) => {
-        const rowClass = p.isAI ? 'ai-row' : p.id === room.hostId ? 'host-row' : '';
-        const face = p.isAI ? '🤖' : (p.id === this.multiplayer.playerId ? '🧑‍🚀' : '🌊');
-        const label = p.isAI ? `${p.skill || 'AI'} fill` : p.id === room.hostId ? 'Host' : p.status || 'Ready';
+        const disconnected = p.connected === false || p.status === 'ai-replaced';
+        const rowClass = `${p.isAI ? 'ai-row' : p.id === room.hostId ? 'host-row' : ''} ${disconnected ? 'disconnected-row' : ''}`;
+        const face = disconnected ? '🔌' : p.isAI ? '🤖' : (p.id === this.multiplayer.playerId ? '🧑‍🚀' : '🌊');
+        const label = disconnected ? 'Disconnected • fair AI took over' : p.isAI ? `${p.skill || 'AI'} fill` : p.id === room.hostId ? 'Host connected' : `${p.status || 'Ready'} • connected`;
         return `<div class="player-row ${rowClass}"><span class="avatar-dot">${face}</span><span><b>${p.name}</b><br><small>${label}</small></span><span>${Math.round(p.accuracy ?? 100)}%</span></div>`;
       }).join('');
     }
@@ -1606,16 +1710,24 @@
       document.body.classList.toggle('font-huge', this.settings.fontSize === 'huge');
     }
     updateKeyboardVisibility() {
-      $('mobileKeyboard').classList.toggle('visible', !!this.settings.mobileKeyboard && this.currentScreen === 'gameScreen');
+      const keyboard = $('mobileKeyboard');
+      const visible = !!this.settings.mobileKeyboard && this.currentScreen === 'gameScreen';
+      keyboard.classList.toggle('visible', visible);
+      document.body.classList.toggle('keyboard-open', visible);
+      requestAnimationFrame(() => {
+        const h = visible ? (keyboard.offsetHeight || 0) : 0;
+        document.documentElement.style.setProperty('--keyboard-space', `${h + (visible ? 14 : 0)}px`);
+      });
     }
     buildKeyboard() {
       const rows = ['1234567890', 'qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
       $('mobileKeyboard').innerHTML = rows.map(row => `<div class="key-row">${[...row].map(ch => `<button class="key-btn" data-key="${ch}">${ch}</button>`).join('')}</div>`).join('') + `<div class="key-row"><button class="key-btn wide" data-key="Backspace">⌫</button><button class="key-btn wide" data-key=" ">Space</button><button class="key-btn wide" data-key="Enter">Enter</button></div>`;
+      $('mobileKeyboard').addEventListener('pointerdown', (e) => e.preventDefault(), { passive: false });
       $('mobileKeyboard').addEventListener('click', (e) => {
         const btn = e.target.closest('[data-key]');
-        if (!btn) return;
+        if (!btn || !this.game) return;
+        e.preventDefault();
         this.game.handleKey(btn.dataset.key);
-        this.focusTyping();
       });
     }
     fullscreen() {

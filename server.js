@@ -73,7 +73,8 @@ function publicRoom(room) {
       accuracy: p.accuracy ?? 100,
       lives: p.lives ?? 100,
       status: p.status || 'lobby',
-      connected: p.connected !== false
+      connected: p.connected !== false,
+      replacedHuman: !!p.replacedHuman
     })),
     votes: room.votes || {}
   };
@@ -320,11 +321,14 @@ io.on('connection', socket => {
     if (idx >= 0) {
       if (room.phase === 'playing' || room.phase === 'results') {
         const ai = makeAi(idx + 1);
+        ai.name = `${safeName(player.name)} AI`;
         ai.score = player.score || 0;
         ai.combo = player.combo || 1;
         ai.accuracy = player.accuracy ?? 100;
         ai.lives = player.lives ?? 100;
         ai.status = 'ai-replaced';
+        ai.connected = false;
+        ai.replacedHuman = true;
         room.players.splice(idx, 1, ai);
       } else {
         room.players.splice(idx, 1);

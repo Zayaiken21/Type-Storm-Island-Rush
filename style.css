@@ -1,4 +1,5 @@
 :root {
+  --keyboard-space: 0px;
   --bg-a: #061d3d;
   --bg-b: #0f7ee8;
   --bg-c: #21d4d4;
@@ -111,15 +112,18 @@ select option { color: #061d3d; }
 .pause-btn { pointer-events: auto; }
 .leaderboard { position: absolute; right: calc(10px + env(safe-area-inset-right)); top: calc(70px + env(safe-area-inset-top)); width: min(230px, 32vw); display: grid; gap: 6px; pointer-events: none; }
 .leader-row { padding: 7px 9px; border-radius: 13px; background: rgba(1, 13, 33, 0.58); border: 1px solid rgba(255,255,255,0.15); font-size: 0.78rem; display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.leader-row.disconnected-row, .player-row.disconnected-row { background: rgba(255,91,127,0.15); border-color: rgba(255,91,127,0.35); }
 .power-buttons { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; pointer-events: auto; }
 .power-btn { min-height: 42px; padding: 0 10px; border-radius: 14px; color: #062143; background: linear-gradient(145deg, #46f4a8, #ffe066); font-weight: 1000; font-size: 0.78rem; }
 .power-btn:disabled { opacity: 0.45; filter: grayscale(1); }
-.mobile-keyboard { position: absolute; left: 50%; bottom: calc(10px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(760px, 96vw); display: none; grid-template-columns: 1fr; gap: 5px; padding: 8px; border-radius: 18px; background: rgba(1, 13, 33, 0.62); border: 1px solid rgba(255,255,255,0.16); backdrop-filter: blur(12px); }
+.mobile-keyboard { position: absolute; z-index: 22; left: 50%; bottom: calc(7px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(680px, calc(100vw - 16px)); display: none; grid-template-columns: 1fr; gap: 4px; padding: 7px; border-radius: 20px; background: linear-gradient(180deg, rgba(1,13,33,0.72), rgba(1,13,33,0.9)); border: 1px solid rgba(255,255,255,0.18); backdrop-filter: blur(12px); box-shadow: 0 16px 50px rgba(0,0,0,.26); touch-action: manipulation; }
 .mobile-keyboard.visible { display: grid; }
-.key-row { display: flex; justify-content: center; gap: 5px; }
-.key-btn { min-height: 36px; min-width: 30px; padding: 0 9px; border-radius: 10px; color: white; background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.16); font-weight: 900; }
-.key-btn.wide { min-width: 72px; }
-.hidden-typing { position: absolute; opacity: 0; pointer-events: none; left: -1000px; top: -1000px; }
+.key-row { display: flex; justify-content: center; gap: 4px; }
+.key-btn { min-height: clamp(31px, 5.2dvh, 42px); min-width: clamp(30px, 8.4vw, 50px); padding: 0 7px; border-radius: 11px; color: white; background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.16); font-weight: 900; font-size: clamp(0.86rem, 3.8vw, 1.15rem); }
+.key-btn.wide { min-width: min(29vw, 118px); }
+.hidden-typing { position: fixed; opacity: 0; pointer-events: none; left: -1000px; top: -1000px; width: 1px; height: 1px; }
+body.keyboard-open .hud { padding-bottom: calc(var(--keyboard-space) + 10px + env(safe-area-inset-bottom)); }
+body.keyboard-open .leaderboard { bottom: calc(var(--keyboard-space) + 72px + env(safe-area-inset-bottom)); top: auto; }
 
 .overlay { position: fixed; inset: 0; display: none; place-items: center; padding: 18px; z-index: 30; background: rgba(0, 13, 32, 0.62); backdrop-filter: blur(10px); }
 .overlay.active { display: grid; }
@@ -152,9 +156,14 @@ select option { color: #061d3d; }
 }
 
 @media (max-width: 560px) and (orientation: portrait) {
-  .game-screen::after { content: "Landscape recommended"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 12px 16px; border-radius: 999px; background: rgba(0,0,0,0.54); color: white; font-weight: 900; pointer-events: none; opacity: 0.86; }
+  .game-screen::after { content: "Landscape recommended"; position: absolute; left: 50%; top: min(50%, calc(52% - var(--keyboard-space) / 2)); transform: translate(-50%, -50%); padding: 12px 16px; border-radius: 999px; background: rgba(0,0,0,0.54); color: white; font-weight: 900; pointer-events: none; opacity: 0.72; }
   .leaderboard { display: none; }
   .power-btn { min-height: 38px; }
+  .mobile-keyboard { width: calc(100vw - 12px); gap: 3px; padding: 6px; border-radius: 18px; }
+  .key-row { gap: 3px; }
+  .key-btn { min-height: clamp(31px, 4.75dvh, 39px); min-width: clamp(29px, 8.1vw, 42px); padding: 0 5px; border-radius: 10px; }
+  .key-btn.wide { min-width: min(30vw, 112px); }
+  body.keyboard-open .hud-row.bottom { padding-bottom: 0; }
 }
 
 /* Multiplayer Match Center upgrade inspired by the user's existing room flow */
@@ -203,4 +212,11 @@ select option { color: #061d3d; }
   .room-list { grid-template-columns: 1fr; }
   .section-head { align-items: stretch; flex-direction: column; }
   .big-code { min-height: 66px; }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .mobile-keyboard { width: min(720px, 82vw); right: calc(8px + env(safe-area-inset-right)); left: auto; bottom: calc(6px + env(safe-area-inset-bottom)); transform: none; }
+  .key-btn { min-height: 30px; min-width: 34px; font-size: .9rem; }
+  .key-btn.wide { min-width: 92px; }
+  body.keyboard-open .hud { padding-bottom: calc(var(--keyboard-space) + 8px + env(safe-area-inset-bottom)); }
 }
